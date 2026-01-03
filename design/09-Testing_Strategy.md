@@ -959,11 +959,11 @@ jobs:
 
       - name: Run unit tests
         run: |
-          cargo test --verbose
+          cmake test --verbose
 
       - name: Run integration tests
         run: |
-          cargo test --test integration --verbose
+          cmake test --test integration --verbose
 
       - name: Run Python tests
         run: |
@@ -972,8 +972,8 @@ jobs:
 
       - name: Code coverage
         run: |
-          cargo install cargo-tarpaulin
-          cargo tarpaulin --out Xml
+          cmake install cmake-tarpaulin
+          cmake tarpaulin --out Xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v2
@@ -1067,7 +1067,7 @@ pytest --html=report.html --self-contained-html
 | 9 | ISO-TP多帧和流控测试 | 03-UDS Protocol ISO-TP; 06-Tech (2.2) | ✅ | 单帧/多帧/流控测试 |
 | 10 | 性能基准 (P2/P2*/吞吐量) | 01-SRS性能指标 | ✅ | ≤10ms/≤50ms/≥10KB/s |
 | 11 | Mock框架支持 (mockall) | 08-4.2 ServiceRegistry | ✅ | 用于单元测试handler隔离 |
-| 12 | 技术栈一致 (pytest/cargo-test) | 06-Tech Stack (4.1) | ✅ | Python pytest + Rust cargo test |
+| 12 | 技术栈一致 (pytest/cmake-test) | 06-Tech Stack (4.1) | ✅ | Python pytest + Rust cmake test |
 | 13 | CI/CD集成 (GitHub Actions) | 10-Roadmap (5.2) | ✅ | 自动化测试、覆盖率、报告 |
 | 14 | 边界条件测试 (最大/最小值) | 08错误处理 | ✅ | 4095字节报文、10个并发会话 |
 
@@ -1079,7 +1079,7 @@ pytest --html=report.html --self-contained-html
 
 - [01-System_Requirements_Specification.md](01-System_Requirements_Specification.md) - 系统需求 (FR-TRANS-003/004, FR-SEC-001/002, FR-FLASH-001)
 - [03-UDS_Protocol_Design.md](03-UDS_Protocol_Design.md) - UDS协议 (NRC码表, ISO-TP)
-- [06-Technology_Stack.md](06-Technology_Stack.md) - 技术栈 (pytest, cargo-test, mockall)
+- [06-Technology_Stack.md](06-Technology_Stack.md) - 技术栈 (pytest, cmake-test, mockall)
 - [08-Interface_and_Integration_Design.md](08-Interface_and_Integration_Design.md) - 接口定义 (17个服务, 27个NRC)
 - [10-Development_Roadmap.md](10-Development_Roadmap.md) - 开发计划 (M3 API冻结)
 - ISO 14229-1:2020 - UDS 标准

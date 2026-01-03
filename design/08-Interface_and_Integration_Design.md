@@ -417,7 +417,7 @@ impl SecurityAccess {
 
     /// 生成种子
     fn generate_seed(&self, level: u8) -> Result<Vec<u8>, String> {
-        // 实现见06-技术栈: 使用rand crate
+        // 实现见06-技术栈: 使用rand 库
         use rand::Rng;
         let mut rng = rand::thread_rng();
         let seed_size = 4; // 默认4字节
@@ -2016,10 +2016,10 @@ mod tests {
 
 ```bash
 # 生成文档
-cargo doc --open
+cmake doc --open
 
 # 包含私有项
-cargo doc --document-private-items --open
+cmake doc --document-private-items --open
 ```
 
 ### 11.2 Python 文档

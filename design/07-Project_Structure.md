@@ -19,13 +19,13 @@
 ```
 uds-diagnostic-system/
 ├── design/                 # 设计文档
-├── crates/                 # Rust 子项目 (Cargo Workspace)
-│   ├── uds-core/          # 核心 UDS 实现
-│   ├── uds-tp/            # ISO-TP 传输层
-│   ├── uds-can/           # SocketCAN 封装 (新增, 见06章技术栈)
-│   ├── uds-bootloader/    # Bootloader 和 Flash 模拟
-│   ├── uds-ecusim/        # ECU 模拟器 (新增)
-│   └── uds-client/        # 诊断仪客户端 (可选Rust实现)
+├── src/                    # C 源代码 (CMake 项目)
+│   ├── core/              # 核心 UDS 实现
+│   ├── tp/                # ISO-TP 传输层
+│   ├── can/               # SocketCAN 封装 (新增, 见06章技术栈)
+│   ├── bootloader/        # Bootloader 和 Flash 模拟
+│   ├── ecusim/            # ECU 模拟器 (新增)
+│   └── include/           # 公共头文件
 ├── tools/                 # Python 工具
 │   ├── uds-cli/           # 命令行工具 (诊断仪)
 │   └── uds-test/          # 自动化测试框架
@@ -37,9 +37,9 @@ uds-diagnostic-system/
 ```
 
 **对齐说明** (与06章技术栈协调):
-- Rust crates 采用 **Cargo Workspace** 组织,版本号统一管理
-- `uds-can` 模块新增,负责SocketCAN封装和多ECU路由 (FR-TRANS-002, 见06章)
-- `uds-ecusim` 新增,支持多ECU隔离与并发 (FR-TRANS-004, 见06章)
+- C 源代码采用 **CMake** 构建,版本号统一管理
+- `can` 模块新增,负责SocketCAN封装和多ECU路由 (FR-TRANS-002, 见06章)
+- `ecusim` 新增,支持多ECU隔离与并发 (FR-TRANS-004, 见06章)
 
 ### 1.2 目录结构详解
 
@@ -52,10 +52,9 @@ uds-diagnostic-system/
 ```
 uds-diagnostic-system/
 │
-├── Cargo.toml              # Workspace 根配置 (06章技术栈定义)
-├── Cargo.lock              # 依赖锁定文件
+├── CMakeLists.txt          # 根构建配置 (06章技术栈定义)
 ├── README.md               # 项目说明
-├── LICENSE                 # 许可证 (MIT OR Apache 2.0, 见06章)
+├── LICENSE                 # 许可证 (MIT OR Apache-2.0)
 ├── .gitignore              # Git 忽略规则
 │
 ├── design/                 # 设计文档目录 (10份设计文档)
@@ -71,72 +70,63 @@ uds-diagnostic-system/
 │   ├── 09-Testing_Strategy.md (测试覆盖率)
 │   └── 10-Development_Roadmap.md (Phase划分)
 │
-├── crates/                 # Rust 子项目 (Workspace成员, 见06章)
+├── src/                    # C 源代码 (CMake 成员, 见06章)
 │   │
-│   ├── uds-core/          # 核心 UDS 实现
-│   │   ├── Cargo.toml     # (继承workspace依赖)
-│   │   └── src/
-│   │       ├── lib.rs                       # (~100行, 公共导出)
-│   │       ├── session.rs                   # (~400行, 0x10/0x3E会话管理)
-│   │       ├── services.rs                  # (~600行, 0x22/0x2E/0x19/0x14)
-│   │       ├── security.rs                  # (~300行, 0x27安全解锁)
-│   │       ├── routine.rs                   # (~250行, 0x31诊断程序)
-│   │       ├── data.rs                      # (~350行, DID/DTC管理)
-│   │       ├── ecu_registry.rs              # (~200行, 多ECU注册表, 新增)
-│   │       └── error.rs                     # (~150行, NRC错误定义)
+│   ├── core/          # 核心 UDS 实现 (见03-UDS协议)
+│   │   ├── CMakeLists.txt     # (CMake成员)
+│   │       ├── session.c                   # (~400行, 0x10/0x3E会话管理)
+│   │       ├── services.c                  # (~600行, 0x22/0x2E/0x19/0x14)
+│   │       ├── security.c                  # (~300行, 0x27安全解锁)
+│   │       ├── routine.c                   # (~250行, 0x31诊断程序)
+│   │       ├── data.c                      # (~350行, DID/DTC管理)
+│   │       ├── ecu_registry.c              # (~200行, 多ECU注册表, 新增)
+│   │       └── error.c                     # (~150行, NRC错误定义)
 │   │       总计: ~2350行
 │   │
-│   ├── uds-tp/            # ISO-TP 传输层 (见03-UDS协议)
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs                       # (~80行, 模块导出)
-│   │       ├── frame.rs                     # (~200行, SF/FF/CF/FC帧)
-│   │       ├── encode.rs                    # (~180行, 编码多帧)
-│   │       ├── decode.rs                    # (~220行, 解码重组)
-│   │       ├── flow_control.rs              # (~150行, BS/STmin参数)
-│   │       ├── session.rs                   # (~250行, 会话隔离)
-│   │       └── error.rs                     # (~100行, 传输错误)
+│   ├── tp/            # ISO-TP 传输层 (见03-UDS协议) (见03-UDS协议)
+│   │   ├── CMakeLists.txt
+│   │       ├── frame.c                     # (~200行, SF/FF/CF/FC帧)
+│   │       ├── encode.c                    # (~180行, 编码多帧)
+│   │       ├── decode.c                    # (~220行, 解码重组)
+│   │       ├── flow_control.c              # (~150行, BS/STmin参数)
+│   │       ├── session.c                   # (~250行, 会话隔离)
+│   │       └── error.c                     # (~100行, 传输错误)
 │   │       总计: ~1180行
 │   │
-│   ├── uds-can/           # SocketCAN 封装 (新增, 见06/05章)
-│   │   ├── Cargo.toml     # (依赖: socketcan 2.0+)
-│   │   └── src/
-│   │       ├── lib.rs                       # (~60行, 模块导出)
-│   │       ├── socket.rs                    # (~200行, Socket封装API)
-│   │       ├── frame.rs                     # (~100行, CAN帧定义)
-│   │       ├── filter.rs                    # (~120行, CAN ID过滤)
-│   │       ├── router.rs                    # (~200行, 多ECU路由, 新增)
-│   │       └── error.rs                     # (~80行, CAN错误)
+│   ├── can/           # SocketCAN 封装 (新增, 见06/05章)
+│   │   ├── CMakeLists.txt     # (链接依赖)
+│   │       ├── socket.c                    # (~200行, Socket封装API)
+│   │       ├── frame.c                     # (~100行, CAN帧定义)
+│   │       ├── filter.c                    # (~120行, CAN ID过滤)
+│   │       ├── router.c                    # (~200行, 多ECU路由, 新增)
+│   │       └── error.c                     # (~80行, CAN错误)
 │   │       总计: ~760行
 │   │
-│   ├── uds-bootloader/    # Bootloader 和 Flash (见04-刷写设计)
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs                       # (~80行, 模块导出)
-│   │       ├── bootloader.rs                # (~350行, 状态机)
-│   │       ├── flash.rs                     # (~400行, Flash存储模型)
-│   │       ├── parser.rs                    # (~300行, S-Record/HEX解析)
-│   │       ├── verifier.rs                  # (~200行, 校验和验证)
-│   │       └── error.rs                     # (~100行, 刷写错误)
+│   ├── bootloader/    # Bootloader 和 Flash (见04-刷写设计)
+│   │   ├── CMakeLists.txt
+│   │       ├── bootloader.c                # (~350行, 状态机)
+│   │       ├── flash.c                     # (~400行, Flash存储模型)
+│   │       ├── parser.c                    # (~300行, S-Record/HEX解析)
+│   │       ├── verifier.c                  # (~200行, 校验和验证)
+│   │       └── error.c                     # (~100行, 刷写错误)
 │   │       总计: ~1430行
 │   │
-│   ├── uds-ecusim/        # ECU 模拟器 (新增, 见02架构)
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs                       # (~80行, 模块导出)
-│   │       ├── ecu.rs                       # (~450行, ECU对象生命周期)
-│   │       ├── memory.rs                    # (~250行, RAM/Flash模型)
-│   │       ├── dtc.rs                       # (~200行, DTC记录)
-│   │       ├── config.rs                    # (~150行, JSON配置加载)
-│   │       └── error.rs                     # (~80行, 模拟器错误)
+│   ├── ecusim/        # ECU 模拟器 (新增, 见02-架构设计)
+│   │   ├── CMakeLists.txt
+│   │       ├── ecu.c                        # (~450行, ECU对象生命周期)
+│   │       ├── memory.c                    # (~250行, RAM/Flash模型)
+│   │       ├── dtc.c                        # (~200行, DTC记录)
+│   │       ├── config.c                    # (~150行, JSON配置加载)
+│   │       └── error.c                     # (~80行, 模拟器错误)
 │   │       总计: ~1210行
 │   │
-│   └── uds-client/        # 诊断仪客户端 (可选Rust实现)
-│       ├── Cargo.toml
-│       └── src/
-│           ├── lib.rs                       # (~100行, 公共导出)
-│           └── cli.rs                       # (~400行, CLI交互)
-│           总计: ~500行
+│   └── include/             # 公共头文件
+│       ├── core.h                           # 核心UDS接口
+│       ├── tp.h                             # ISO-TP接口
+│       ├── can.h                            # CAN驱动接口
+│       ├── bootloader.h                     # Bootloader接口
+│       ├── ecusim.h                         # ECU模拟器接口
+│       └── version.h                        # 版本定义
 │
 ├── tools/                 # Python 工具
 │   │
@@ -178,16 +168,16 @@ uds-diagnostic-system/
 │
 ├── tests/                 # 集成和性能测试
 │   ├── integration/
-│   │   ├── test_full_workflow.rs           # (~300行, 完整诊断流程)
-│   │   ├── test_multi_ecu.rs               # (~250行, 多ECU并发)
-│   │   ├── test_flash_recovery.rs          # (~200行, 刷写恢复)
-│   │   └── conftest.rs                     # (~150行, 测试装置)
+│   │   ├── test_full_workflow.c           # (~300行, 完整诊断流程)
+│   │   ├── test_multi_ecu.c               # (~250行, 多ECU并发)
+│   │   ├── test_flash_recovery.c          # (~200行, 刷写恢复)
+│   │   └── conftest.c                     # (~150行, 测试装置)
 │   │   总计: ~900行
 │   │
 │   └── performance/
-│       ├── bench_throughput.rs             # (~200行, 吞吐量基准)
-│       ├── bench_latency.rs                # (~200行, 延迟基准)
-│       └── bench_concurrent.rs             # (~200行, 多ECU并发基准)
+│       ├── bench_throughput.c             # (~200行, 吞吐量基准)
+│       ├── bench_latency.c                # (~200行, 延迟基准)
+│       └── bench_concurrent.c             # (~200行, 多ECU并发基准)
 │       总计: ~600行
 │
 ├── configs/               # 配置文件 (JSON格式)
@@ -221,7 +211,7 @@ uds-diagnostic-system/
 │   └── examples/          # 示例代码
 │       ├── basic_diagnostic.py             # (Python示例)
 │       ├── flash_firmware.py               # (刷写示例)
-│       └── custom_ecu.rs                   # (Rust示例)
+│       └── custom_ecu.c                   # (Rust示例)
 │
 ├── scripts/               # 构建和部署脚本
 │   ├── setup_vcan.sh      # (设置虚拟CAN, 见05章)
@@ -242,31 +232,31 @@ uds-diagnostic-system/
 **统计信息与交付说明**:
 | 类别 | 代码量 | 备注 |
 |------|--------|------|
-| Rust核心 | ~7130行 | uds-core/tp/can/bootloader/ecusim |
+| C源代码          | ~7000行 | uds-core/tp/can/bootloader/ecusim |
 | Python工具 | ~3410行 | uds-cli/uds-test |
 | 配置文件 | ~1230行JSON | 支持多ECU动态配置 |
 | 集成测试 | ~1500行 | 覆盖率目标≥80%, 见09章 |
-| **总代码** | **~13270行** | 对齐10章Phase规划 |
+| **总代码** | **~12500行** | 对齐10章Phase规划 |
 
 ---
 
 ## 3. 核心模块文件清单
 
-### 3.1 uds-core
+### 3.1 core
 
-**职责**: UDS 诊断协议核心实现 (见02-架构设计和03-UDS协议)
+**职责**: UDS 诊断协议核心实现 (见02-System_Architecture_Design和03-UDS_Protocol_Design)
 
 **文件清单和对齐**:
 | 文件 | 行数 | 关联服务 | 对应需求 |
 |------|------|--------|---------|
-| lib.rs | ~100 | 公共导出 | - |
-| session.rs | ~400 | 0x10(会话控制), 0x3E(心跳) | FR-SES-001/002/003 |
-| services.rs | ~600 | 0x22(读DID), 0x2E(写DID), 0x19(读DTC), 0x14(清除DTC) | FR-DATA-001/002, FR-DTC-001/002 |
-| security.rs | ~300 | 0x27(安全解锁) | FR-SEC-001/002 |
-| routine.rs | ~250 | 0x31(诊断程序) | FR-ROUTINE |
-| data.rs | ~350 | DID/DTC/数据管理 | FR-DATA-*, FR-DTC-* |
-| ecu_registry.rs | ~200 | 多ECU注册表 (新增) | FR-TRANS-004 (多ECU并发) |
-| error.rs | ~150 | NRC错误定义 | ISO 14229-1 错误码 |
+| module.h | ~100 | 公共导出 | - |
+| session.c | ~400 | 0x10(会话控制), 0x3E(心跳) | FR-SES-001/002/003 |
+| services.c | ~600 | 0x22(读DID), 0x2E(写DID), 0x19(读DTC), 0x14(清除DTC) | FR-DATA-001/002, FR-DTC-001/002 |
+| security.c | ~300 | 0x27(安全解锁) | FR-SEC-001/002 |
+| routine.c | ~250 | 0x31(诊断程序) | FR-ROUTINE |
+| data.c | ~350 | DID/DTC/数据管理 | FR-DATA-*, FR-DTC-* |
+| ecu_registry.c | ~200 | 多ECU注册表 (新增) | FR-TRANS-004 (多ECU并发) |
+| error.c | ~150 | NRC错误定义 | ISO 14229-1 错误码 |
 
 **总计**: ~2350行
 
@@ -274,20 +264,20 @@ uds-diagnostic-system/
 
 ---
 
-### 3.2 uds-tp
+### 3.2 tp
 
-**职责**: ISO-TP 传输层实现 (见03-UDS协议, ISO 15765-2)
+**职责**: ISO-TP 传输层实现 (见03-UDS_Protocol_Design, ISO 15765-2)
 
 **文件清单和对齐**:
 | 文件 | 行数 | 关键功能 | 对应需求 |
 |------|------|--------|---------|
-| lib.rs | ~80 | 模块导出 | - |
-| frame.rs | ~200 | SF/FF/CF/FC帧类型 | FR-TRANS-001 |
-| encode.rs | ~180 | 多帧分段编码 | FR-TRANS-001 |
-| decode.rs | ~220 | 多帧重组解码 | FR-TRANS-001 |
-| flow_control.rs | ~150 | BS/STmin流量控制 | FR-TRANS-003 |
-| session.rs | ~250 | 独立ISO-TP会话 | FR-TRANS-004 (per-ECU隔离) |
-| error.rs | ~100 | 传输层错误 | 见08章错误处理 |
+| module.h | ~80 | 模块导出 | - |
+| frame.c | ~200 | SF/FF/CF/FC帧类型 | FR-TRANS-001 |
+| encode.c | ~180 | 多帧分段编码 | FR-TRANS-001 |
+| decode.c | ~220 | 多帧重组解码 | FR-TRANS-001 |
+| flow_control.c | ~150 | BS/STmin流量控制 | FR-TRANS-003 |
+| session.c | ~250 | 独立ISO-TP会话 | FR-TRANS-004 (per-ECU隔离) |
+| error.c | ~100 | 传输层错误 | 见08章错误处理 |
 
 **总计**: ~1180行
 
@@ -295,39 +285,39 @@ uds-diagnostic-system/
 
 ---
 
-### 3.3 uds-can
+### 3.3 can
 
-**职责**: SocketCAN 封装与多ECU路由 (见05-虚拟CAN设计, 06-技术栈)
+**职责**: SocketCAN 封装与多ECU路由 (见05-Virtual_CAN_Platform_Design, 06-Technology_Stack)
 
 **文件清单和对齐**:
 | 文件 | 行数 | 关键功能 | 对应需求 |
 |------|------|--------|---------|
-| lib.rs | ~60 | 模块导出 | - |
-| socket.rs | ~200 | Socket封装API, 绑定vCAN | FR-TRANS-001 |
-| frame.rs | ~100 | CAN帧结构(标准/扩展/FD) | 见05章 |
-| filter.rs | ~120 | CAN ID过滤与匹配 | FR-TRANS-002 |
-| router.rs | ~200 | 多ECU消息路由与转发(新增) | FR-TRANS-002/004 |
-| error.rs | ~80 | CAN错误定义 | 见08章错误处理 |
+| module.h | ~60 | 模块导出 | - |
+| socket.c | ~200 | Socket封装API, 绑定vCAN | FR-TRANS-001 |
+| frame.c | ~100 | CAN帧结构(标准/扩展/FD) | 见05章 |
+| filter.c | ~120 | CAN ID过滤与匹配 | FR-TRANS-002 |
+| router.c | ~200 | 多ECU消息路由与转发(新增) | FR-TRANS-002/004 |
+| error.c | ~80 | CAN错误定义 | 见08章错误处理 |
 
 **总计**: ~760行
 
-**新增router.rs模块**: 支持物理/功能寻址, CAN ID路由规则(0x600+ECU_ID, 0x680+ECU_ID)
+**新增router.c模块**: 支持物理/功能寻址, CAN ID路由规则(0x600+ECU_ID, 0x680+ECU_ID)
 
 ---
 
-### 3.4 uds-bootloader
+### 3.4 bootloader
 
-**职责**: Bootloader 和 Flash 模拟 (见04-Bootloader_and_Flash设计)
+**职责**: Bootloader 和 Flash 模拟 (见04-Bootloader_and_Flash_Design)
 
 **文件清单和对齐**:
 | 文件 | 行数 | 关键功能 | 对应需求 |
 |------|------|--------|---------|
-| lib.rs | ~80 | 模块导出 | - |
-| bootloader.rs | ~350 | Bootloader状态机 | FR-FLASH-001 |
-| flash.rs | ~400 | Flash内存模型(1MB, 多区域) | FR-FLASH-002 |
-| parser.rs | ~300 | S-Record/Intel HEX解析 | FR-FLASH-003 |
-| verifier.rs | ~200 | 刷写校验和验证 | FR-FLASH-004 |
-| error.rs | ~100 | 刷写错误与恢复 | 见04章NRC处理 |
+| module.h | ~80 | 模块导出 | - |
+| bootloader.c | ~350 | Bootloader状态机 | FR-FLASH-001 |
+| flash.c | ~400 | Flash内存模型(1MB, 多区域) | FR-FLASH-002 |
+| parser.c | ~300 | S-Record/Intel HEX解析 | FR-FLASH-003 |
+| verifier.c | ~200 | 刷写校验和验证 | FR-FLASH-004 |
+| error.c | ~100 | 刷写错误与恢复 | 见04章NRC处理 |
 
 **总计**: ~1430行
 
@@ -335,19 +325,19 @@ uds-diagnostic-system/
 
 ---
 
-### 3.5 uds-ecusim
+### 3.5 ecusim
 
-**职责**: ECU 模拟器与多ECU管理 (见02-架构设计, 06-技术栈)
+**职责**: ECU 模拟器与多ECU管理 (见02-System_Architecture_Design, 06-Technology_Stack)
 
 **文件清单和对齐**:
 | 文件 | 行数 | 关键功能 | 对应需求 |
 |------|------|--------|---------|
-| lib.rs | ~80 | 模块导出 | - |
-| ecu.rs | ~450 | ECU对象生命周期管理 | FR-TRANS-004 |
-| memory.rs | ~250 | RAM/Flash内存模型 | 与uds-bootloader协调 |
-| dtc.rs | ~200 | DTC记录与管理 | FR-DTC-001/002 |
-| config.rs | ~150 | JSON配置加载(pydantic验证) | FR-TRANS-002 |
-| error.rs | ~80 | 模拟器错误 | - |
+| module.h | ~80 | 模块导出 | - |
+| ecu.c | ~450 | ECU对象生命周期管理 | FR-TRANS-004 |
+| memory.c | ~250 | RAM/Flash内存模型 | 与uds-bootloader协调 |
+| dtc.c | ~200 | DTC记录与管理 | FR-DTC-001/002 |
+| config.c | ~150 | JSON配置加载(pydantic验证) | FR-TRANS-002 |
+| error.c | ~80 | 模拟器错误 | - |
 
 **总计**: ~1210行
 
@@ -524,7 +514,7 @@ tools/uds-test/
 
 **位置**: 与源代码同目录
 
-**示例**: `crates/uds-core/src/session.rs`
+**示例**: `src/uds-core/src/session.c`
 ```rust
 #[cfg(test)]
 mod tests {
@@ -544,9 +534,9 @@ mod tests {
 **位置**: `tests/integration/`
 
 **文件**:
-- `test_full_workflow.rs` - 完整诊断流程
-- `test_multi_ecu.rs` - 多 ECU 场景
-- `test_flash_recovery.rs` - 刷写恢复
+- `test_full_workflow.c` - 完整诊断流程
+- `test_multi_ecu.c` - 多 ECU 场景
+- `test_flash_recovery.c` - 刷写恢复
 
 ---
 
@@ -555,8 +545,8 @@ mod tests {
 **位置**: `tests/performance/`
 
 **文件**:
-- `bench_throughput.rs` - 吞吐量测试
-- `bench_latency.rs` - 延迟测试
+- `bench_throughput.c` - 吞吐量测试
+- `bench_latency.c` - 延迟测试
 
 ---
 
@@ -699,7 +689,7 @@ echo "All tests passed!"
 
 ## 10. 结构约束与治理
 
-- **代码所有权**: 按模块设置 Code Owners (crates/uds-core, uds-tp, uds-bootloader, uds-can, tools/uds-cli, tools/uds-test)。
+- **代码所有权**: 按模块设置 Code Owners (src/uds-core, uds-tp, uds-bootloader, uds-can, tools/uds-cli, tools/uds-test)。
 - **命名规范**: crate/包名使用 kebab-case; Rust 模块/文件使用 snake_case; Python 包使用小写下划线; 配置文件使用前缀 (did_*, dtc_*, ecu_*)。
 - **格式与静态检查**: Rust 强制 `cargo fmt && cargo clippy -D warnings`; Python 推荐 `ruff`/`black`/`mypy`; CI 阻断未通过的 PR。
 - **生成物与缓存**: 生成产物统一到 `target/` 与 `.pytest_cache/`, 并在 `.gitignore` 管控; 示例配置与固件放置于 `configs/`、`firmware/`。
