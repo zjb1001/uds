@@ -274,9 +274,8 @@ int uds_svc_transfer_data(UdsXferSession *xfer, UdsFlashMemory *flash,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_transfer_exit(UdsXferSession *xfer, uint8_t *resp,
-                          size_t resp_size, size_t *resp_len,
-                          uint8_t *nrc_out);
+int uds_svc_transfer_exit(UdsXferSession *xfer, uint8_t *resp, size_t resp_size,
+                          size_t *resp_len, uint8_t *nrc_out);
 
 #ifdef __cplusplus
 }

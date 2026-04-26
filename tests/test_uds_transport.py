@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -17,14 +17,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 
 from uds.exceptions import UdsProtocolError, UdsTimeoutError
 from uds.transport import (
-    IsoTpTransport,
     _CANFD_CF_DATA_BYTES,
-    _CANFD_FF_DATA_BYTES,
-    _CANFD_FF_EXT_DATA_BYTES,
-    _CANFD_SF_MAX_PAYLOAD,
     _FC_CONTINUE,
+    IsoTpTransport,
 )
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,12 +52,12 @@ class TestClassicCanSingleFrame:
 
     def test_send_sf_basic(self) -> None:
         tp, bus, msg_cls = _make_transport()
-        tp.send(b"\x22\xF1\x90")
+        tp.send(b"\x22\xf1\x90")
         bus.send.assert_called_once()
         sent: dict[str, Any] = bus.send.call_args[0][0]
         data = bytes(sent["data"])
         assert data[0] == 0x03  # SF PCI: length 3
-        assert data[1:4] == b"\x22\xF1\x90"
+        assert data[1:4] == b"\x22\xf1\x90"
         assert sent["is_fd"] is False
 
     def test_send_sf_max_classic(self) -> None:
@@ -80,7 +76,7 @@ class TestClassicCanSingleFrame:
         raw = bytes([0x03, 0xAA, 0xBB, 0xCC, 0x00, 0x00, 0x00, 0x00])
         bus.recv.return_value = _rx_msg(0x681, raw)
         result = tp.recv()
-        assert result == b"\xAA\xBB\xCC"
+        assert result == b"\xaa\xbb\xcc"
 
     def test_recv_timeout(self) -> None:
         tp, bus, _ = _make_transport()
@@ -96,7 +92,7 @@ class TestClassicCanSingleFrame:
         correct_msg = _rx_msg(0x681, raw)
         bus.recv.side_effect = [wrong_id_msg, correct_msg]
         result = tp.recv()
-        assert result == b"\xFF"
+        assert result == b"\xff"
 
     def test_recv_unexpected_frame_type(self) -> None:
         tp, bus, _ = _make_transport()
@@ -188,11 +184,11 @@ class TestCanFdSingleFrame:
     def test_send_sf_classic_in_fd_mode(self) -> None:
         """Payloads ≤ 7 bytes use the classic 1-byte PCI even in FD mode."""
         tp, bus, _ = _make_transport(fd=True)
-        tp.send(b"\x22\xF1\x90")
+        tp.send(b"\x22\xf1\x90")
         sent = bus.send.call_args[0][0]
         data = bytes(sent["data"])
         assert data[0] == 0x03  # classic SF PCI
-        assert data[1:4] == b"\x22\xF1\x90"
+        assert data[1:4] == b"\x22\xf1\x90"
 
     def test_send_sf_escape_8_bytes(self) -> None:
         """8-byte payload triggers CAN FD escape-sequence PCI."""
@@ -201,8 +197,8 @@ class TestCanFdSingleFrame:
         tp.send(payload)
         sent = bus.send.call_args[0][0]
         data = bytes(sent["data"])
-        assert data[0] == 0x00   # escape byte
-        assert data[1] == 0x08   # SF_DL = 8
+        assert data[0] == 0x00  # escape byte
+        assert data[1] == 0x08  # SF_DL = 8
         assert data[2:10] == payload
 
     def test_send_sf_escape_max(self) -> None:
@@ -232,7 +228,7 @@ class TestCanFdSingleFrame:
         tp, bus, _ = _make_transport(fd=True)
         bus.recv.return_value = _rx_msg(0x681, raw)
         result = tp.recv()
-        assert result == b"\xAA\xBB\xCC"
+        assert result == b"\xaa\xbb\xcc"
 
     def test_63_byte_payload_triggers_multiframe(self) -> None:
         """63-byte payload (> 62) must use multi-frame, not SF."""

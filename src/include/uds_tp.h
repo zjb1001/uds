@@ -342,7 +342,7 @@ const char *uds_tp_strerror(int err);
 
 /** Minimum SF_DL value when using the CAN FD escape sequence (ISO 15765-2:
  *  escape sequence is only used when SF_DL > UDS_TP_SF_MAX_DATA). */
-#define UDS_TP_CANFD_SF_ESCAPE_MIN_DL (UDS_TP_SF_MAX_DATA + 1U)  /* 8 */
+#define UDS_TP_CANFD_SF_ESCAPE_MIN_DL (UDS_TP_SF_MAX_DATA + 1U) /* 8 */
 
 /** Maximum payload bytes in a CAN FD Single Frame using the escape sequence
  *  (PCI byte 0x00 + SF_DL byte): 64 - 2 = 62. */
@@ -393,7 +393,7 @@ UdsTpFrameType uds_tp_frame_type_fd(const struct canfd_frame *frame);
  * @return UDS_TP_OK or UDS_TP_ERR_PARAM.
  */
 int uds_tp_encode_sf_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, size_t len);
+                        const uint8_t *data, size_t len);
 
 /**
  * @brief Encode a CAN FD First Frame (FF).
@@ -409,7 +409,7 @@ int uds_tp_encode_sf_fd(struct canfd_frame *out, uint32_t can_id,
  * @return UDS_TP_OK, UDS_TP_ERR_PARAM, or UDS_TP_ERR_PDU_LEN.
  */
 int uds_tp_encode_ff_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, uint32_t total_len);
+                        const uint8_t *data, uint32_t total_len);
 
 /**
  * @brief Encode a CAN FD Consecutive Frame (CF).
@@ -422,7 +422,7 @@ int uds_tp_encode_ff_fd(struct canfd_frame *out, uint32_t can_id,
  * @return UDS_TP_OK or UDS_TP_ERR_PARAM.
  */
 int uds_tp_encode_cf_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, size_t len, uint8_t sn);
+                        const uint8_t *data, size_t len, uint8_t sn);
 
 /**
  * @brief Encode a CAN FD Flow Control frame (FC).
@@ -435,7 +435,7 @@ int uds_tp_encode_cf_fd(struct canfd_frame *out, uint32_t can_id,
  * @return UDS_TP_OK or UDS_TP_ERR_PARAM.
  */
 int uds_tp_encode_fc_fd(struct canfd_frame *out, uint32_t can_id,
-                         UdsTpFlowStatus fs, uint8_t bs, uint8_t stmin);
+                        UdsTpFlowStatus fs, uint8_t bs, uint8_t stmin);
 
 /* ── CAN FD frame decode ────────────────────────────────────────────────── */
 
@@ -453,7 +453,7 @@ int uds_tp_encode_fc_fd(struct canfd_frame *out, uint32_t can_id,
  *         or UDS_TP_ERR_BUF_FULL.
  */
 int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
-                         size_t buf_size, size_t *out_len);
+                        size_t buf_size, size_t *out_len);
 
 /**
  * @brief Decode the header and first data chunk of a CAN FD First Frame.
@@ -471,8 +471,8 @@ int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
  *         or UDS_TP_ERR_PDU_LEN.
  */
 int uds_tp_decode_ff_fd(const struct canfd_frame *frame, uint8_t *buf,
-                         size_t buf_size, uint32_t *total_len,
-                         size_t *ff_data_bytes);
+                        size_t buf_size, uint32_t *total_len,
+                        size_t *ff_data_bytes);
 
 /**
  * @brief Decode a CAN FD Consecutive Frame.
@@ -486,7 +486,7 @@ int uds_tp_decode_ff_fd(const struct canfd_frame *frame, uint8_t *buf,
  *         or UDS_TP_ERR_BUF_FULL.
  */
 int uds_tp_decode_cf_fd(const struct canfd_frame *frame, uint8_t *sn_out,
-                         uint8_t *buf, size_t buf_size, size_t max_data);
+                        uint8_t *buf, size_t buf_size, size_t max_data);
 
 /**
  * @brief Decode a CAN FD Flow Control frame.
@@ -498,7 +498,7 @@ int uds_tp_decode_cf_fd(const struct canfd_frame *frame, uint8_t *sn_out,
  * @return UDS_TP_OK, UDS_TP_ERR_PARAM, or UDS_TP_ERR_FRAME_TYPE.
  */
 int uds_tp_decode_fc_fd(const struct canfd_frame *frame, UdsTpFlowStatus *fs,
-                         uint8_t *bs, uint8_t *stmin);
+                        uint8_t *bs, uint8_t *stmin);
 
 /* ── CAN FD high-level send / receive ───────────────────────────────────── */
 
@@ -534,7 +534,8 @@ int uds_tp_send_fd(UdsCanSocket *sock, uint32_t tx_id, const uint8_t *data,
  * @param[out] buf       Caller-supplied buffer for the reassembled PDU.
  * @param[in]  buf_size  Buffer capacity.
  * @param[out] out_len   Actual PDU length on success.
- * @param[in]  cfg       Transfer configuration (must not be NULL, timeout_ms > 0).
+ * @param[in]  cfg       Transfer configuration (must not be NULL, timeout_ms >
+ * 0).
  * @return UDS_TP_OK on success, or a negative UdsTpError code.
  */
 int uds_tp_recv_fd(UdsCanSocket *sock, uint32_t tx_id, uint8_t *buf,
