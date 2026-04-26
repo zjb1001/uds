@@ -147,3 +147,27 @@ add_test(
     NAME    uds_dtc_unit_tests
     COMMAND test_dtc
 )
+
+# ── uds_bootloader unit tests ─────────────────────────────────────────────────
+add_executable(test_flash
+    test_flash.c
+)
+
+target_include_directories(test_flash PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_flash PRIVATE
+    uds_bootloader
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_flash PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_flash_unit_tests
+    COMMAND test_flash
+)

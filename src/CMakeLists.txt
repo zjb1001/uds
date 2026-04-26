@@ -9,3 +9,6 @@ add_subdirectory(tp)
 
 # UDS core diagnostic services (Phase 2 — 0x10 / 0x3E / 0x27)
 add_subdirectory(core)
+
+# UDS bootloader and flash programming services (Phase 3 — 0x34/0x35/0x36/0x37)
+add_subdirectory(bootloader)
