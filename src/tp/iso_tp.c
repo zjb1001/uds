@@ -521,7 +521,7 @@ UdsTpFrameType uds_tp_frame_type_fd(const struct canfd_frame *frame) {
 /* ── CAN FD frame encode ────────────────────────────────────────────────── */
 
 int uds_tp_encode_sf_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, size_t len) {
+                        const uint8_t *data, size_t len) {
   if (!out || !data || len == 0U || len > UDS_TP_CANFD_SF_MAX_DATA) {
     return UDS_TP_ERR_PARAM;
   }
@@ -546,7 +546,7 @@ int uds_tp_encode_sf_fd(struct canfd_frame *out, uint32_t can_id,
 }
 
 int uds_tp_encode_ff_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, uint32_t total_len) {
+                        const uint8_t *data, uint32_t total_len) {
   if (!out || !data) {
     return UDS_TP_ERR_PARAM;
   }
@@ -589,7 +589,7 @@ int uds_tp_encode_ff_fd(struct canfd_frame *out, uint32_t can_id,
 }
 
 int uds_tp_encode_cf_fd(struct canfd_frame *out, uint32_t can_id,
-                         const uint8_t *data, size_t len, uint8_t sn) {
+                        const uint8_t *data, size_t len, uint8_t sn) {
   if (!out || !data || len == 0U || len > UDS_TP_CANFD_CF_DATA_BYTES) {
     return UDS_TP_ERR_PARAM;
   }
@@ -604,7 +604,7 @@ int uds_tp_encode_cf_fd(struct canfd_frame *out, uint32_t can_id,
 }
 
 int uds_tp_encode_fc_fd(struct canfd_frame *out, uint32_t can_id,
-                         UdsTpFlowStatus fs, uint8_t bs, uint8_t stmin) {
+                        UdsTpFlowStatus fs, uint8_t bs, uint8_t stmin) {
   if (!out) {
     return UDS_TP_ERR_PARAM;
   }
@@ -625,7 +625,7 @@ int uds_tp_encode_fc_fd(struct canfd_frame *out, uint32_t can_id,
 /* ── CAN FD frame decode ────────────────────────────────────────────────── */
 
 int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
-                         size_t buf_size, size_t *out_len) {
+                        size_t buf_size, size_t *out_len) {
   if (!frame || !buf || !out_len || buf_size == 0U) {
     return UDS_TP_ERR_PARAM;
   }
@@ -650,7 +650,7 @@ int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
     /* Classic one-byte PCI */
     len = (size_t)(frame->data[0] & 0x0FU);
     data_offset = 1U;
-    if (len == 0U || len > UDS_TP_SF_MAX_DATA) {
+    if (len > UDS_TP_SF_MAX_DATA) {
       return UDS_TP_ERR_PARAM;
     }
   }
@@ -668,8 +668,8 @@ int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
 }
 
 int uds_tp_decode_ff_fd(const struct canfd_frame *frame, uint8_t *buf,
-                         size_t buf_size, uint32_t *total_len,
-                         size_t *ff_data_bytes) {
+                        size_t buf_size, uint32_t *total_len,
+                        size_t *ff_data_bytes) {
   if (!frame || !buf || !total_len || !ff_data_bytes) {
     return UDS_TP_ERR_PARAM;
   }
@@ -686,24 +686,30 @@ int uds_tp_decode_ff_fd(const struct canfd_frame *frame, uint8_t *buf,
     if (frame->len < 6U) {
       return UDS_TP_ERR_PARAM;
     }
-    len = ((uint32_t)frame->data[2] << 24U) | ((uint32_t)frame->data[3] << 16U) |
-          ((uint32_t)frame->data[4] << 8U) | (uint32_t)frame->data[5];
+    len = ((uint32_t)frame->data[2] << 24U) |
+          ((uint32_t)frame->data[3] << 16U) | ((uint32_t)frame->data[4] << 8U) |
+          (uint32_t)frame->data[5];
     if (len == 0U) {
       return UDS_TP_ERR_PDU_LEN;
     }
     data_offset = 6U;
-    embed = ((size_t)frame->len > data_offset) ? ((size_t)frame->len - data_offset) : 0U;
+    embed = ((size_t)frame->len > data_offset)
+                ? ((size_t)frame->len - data_offset)
+                : 0U;
     if (embed > UDS_TP_CANFD_FF_EXT_DATA_BYTES) {
       embed = UDS_TP_CANFD_FF_EXT_DATA_BYTES;
     }
   } else {
     /* Regular FF: 12-bit FF_DL in nibble+byte */
     len = ((uint32_t)(frame->data[0] & 0x0FU) << 8U) | (uint32_t)frame->data[1];
-    if (len <= UDS_TP_CANFD_SF_MAX_DATA || len > UDS_TP_CANFD_FF_EXT_THRESHOLD) {
+    if (len <= UDS_TP_CANFD_SF_MAX_DATA ||
+        len > UDS_TP_CANFD_FF_EXT_THRESHOLD) {
       return UDS_TP_ERR_PDU_LEN;
     }
     data_offset = 2U;
-    embed = ((size_t)frame->len > data_offset) ? ((size_t)frame->len - data_offset) : 0U;
+    embed = ((size_t)frame->len > data_offset)
+                ? ((size_t)frame->len - data_offset)
+                : 0U;
     if (embed > UDS_TP_CANFD_FF_DATA_BYTES) {
       embed = UDS_TP_CANFD_FF_DATA_BYTES;
     }
@@ -720,7 +726,7 @@ int uds_tp_decode_ff_fd(const struct canfd_frame *frame, uint8_t *buf,
 }
 
 int uds_tp_decode_cf_fd(const struct canfd_frame *frame, uint8_t *sn_out,
-                         uint8_t *buf, size_t buf_size, size_t max_data) {
+                        uint8_t *buf, size_t buf_size, size_t max_data) {
   if (!frame || !sn_out || !buf || buf_size == 0U) {
     return UDS_TP_ERR_PARAM;
   }
@@ -743,7 +749,7 @@ int uds_tp_decode_cf_fd(const struct canfd_frame *frame, uint8_t *sn_out,
 }
 
 int uds_tp_decode_fc_fd(const struct canfd_frame *frame, UdsTpFlowStatus *fs,
-                         uint8_t *bs, uint8_t *stmin) {
+                        uint8_t *bs, uint8_t *stmin) {
   if (!frame || !fs || !bs || !stmin) {
     return UDS_TP_ERR_PARAM;
   }
@@ -926,7 +932,8 @@ int uds_tp_recv_fd(UdsCanSocket *sock, uint32_t tx_id, uint8_t *buf,
 
   uint32_t total_len = 0U;
   size_t ff_data_bytes = 0U;
-  int rc = uds_tp_decode_ff_fd(&frame, buf, buf_size, &total_len, &ff_data_bytes);
+  int rc =
+      uds_tp_decode_ff_fd(&frame, buf, buf_size, &total_len, &ff_data_bytes);
   if (rc != UDS_TP_OK) {
     return rc;
   }
@@ -937,7 +944,7 @@ int uds_tp_recv_fd(UdsCanSocket *sock, uint32_t tx_id, uint8_t *buf,
   /* Send initial Flow Control (CTS) */
   struct canfd_frame fc;
   rc = uds_tp_encode_fc_fd(&fc, tx_id, UDS_TP_FC_CTS, cfg->block_size,
-                            cfg->st_min);
+                           cfg->st_min);
   if (rc != UDS_TP_OK) {
     return rc;
   }
@@ -982,8 +989,8 @@ int uds_tp_recv_fd(UdsCanSocket *sock, uint32_t tx_id, uint8_t *buf,
                        : (size_t)remaining;
 
     uint8_t sn = 0U;
-    rc = uds_tp_decode_cf_fd(&frame, &sn, buf + received,
-                              buf_size - received, chunk);
+    rc = uds_tp_decode_cf_fd(&frame, &sn, buf + received, buf_size - received,
+                             chunk);
     if (rc != UDS_TP_OK) {
       return rc;
     }
