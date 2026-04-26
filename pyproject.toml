@@ -1,0 +1,58 @@
+[project]
+name = "uds-diagnostic-system"
+version = "0.1.0"
+description = "UDS Diagnostic Simulation System tools and test framework"
+requires-python = ">=3.10"
+
+# ── pytest ─────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+minversion = "7.4"
+testpaths  = ["tests", "tools"]
+addopts    = [
+    "--tb=short",
+    "--strict-markers",
+    "-v",
+]
+markers = [
+    "unit:        Fast, isolated unit tests (no CAN hardware required)",
+    "integration: Integration tests (require vcan0)",
+    "e2e:         End-to-end tests (full stack)",
+    "slow:        Tests that take more than 5 seconds",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]
+
+# ── ruff (linter + formatter) ───────────────────────────────────────────────
+[tool.ruff]
+target-version = "py310"
+line-length    = 100
+src            = ["tools", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long — handled by formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["uds"]
+
+# ── coverage ───────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source    = ["tools"]
+omit      = ["*/test_*", "*/conftest.py"]
+branch    = true
+
+[tool.coverage.report]
+show_missing   = true
+skip_covered   = false
+fail_under     = 0   # raise when code base grows
