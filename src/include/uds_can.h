@@ -33,7 +33,7 @@ extern "C" {
  *  Full request ID = UDS_CAN_REQ_BASE + ecu_id  (e.g. 0x601 for ECU 1). */
 #define UDS_CAN_REQ_BASE 0x600U
 
-/** Base CAN ID for physical/functional-addressing responses (ECU → Tester).
+/** Base CAN ID for physical-addressing responses (ECU → Tester).
  *  Full response ID = UDS_CAN_RESP_BASE + ecu_id. */
 #define UDS_CAN_RESP_BASE 0x680U
 

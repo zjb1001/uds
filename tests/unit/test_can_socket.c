@@ -227,6 +227,11 @@ END_TEST
 
 /* ── Null-safety for send/recv/filter ───────────────────────────────────── */
 
+/* Clearly invalid fd used in null-safety tests that check parameter guards.
+ * These tests must ONLY reach the parameter-validation path (which fires
+ * before any fd use), so no actual syscall on fd -1 ever occurs. */
+#define INVALID_FD_FOR_PARAM_TEST (-1)
+
 START_TEST(test_send_null_sock) {
   struct can_frame frame = {0};
   ck_assert_int_eq(uds_can_send(NULL, &frame), UDS_CAN_ERR_PARAM);
@@ -234,7 +239,7 @@ START_TEST(test_send_null_sock) {
 END_TEST
 
 START_TEST(test_send_null_frame) {
-  UdsCanSocket s = {.fd = 3}; /* fake fd — won't actually write */
+  UdsCanSocket s = {.fd = INVALID_FD_FOR_PARAM_TEST};
   ck_assert_int_eq(uds_can_send(&s, NULL), UDS_CAN_ERR_PARAM);
 }
 END_TEST
@@ -246,7 +251,7 @@ START_TEST(test_recv_null_sock) {
 END_TEST
 
 START_TEST(test_recv_null_frame) {
-  UdsCanSocket s = {.fd = 3};
+  UdsCanSocket s = {.fd = INVALID_FD_FOR_PARAM_TEST};
   ck_assert_int_eq(uds_can_recv(&s, NULL, 0), UDS_CAN_ERR_PARAM);
 }
 END_TEST
@@ -257,7 +262,7 @@ START_TEST(test_filter_null_sock) {
 END_TEST
 
 START_TEST(test_filter_count_exceeds_max) {
-  UdsCanSocket s = {.fd = 3};
+  UdsCanSocket s = {.fd = INVALID_FD_FOR_PARAM_TEST};
   UdsCanFilter f[UDS_CAN_MAX_FILTERS + 1];
   memset(f, 0, sizeof(f));
   ck_assert_int_eq(uds_can_set_filter(&s, f, UDS_CAN_MAX_FILTERS + 1),
@@ -266,7 +271,7 @@ START_TEST(test_filter_count_exceeds_max) {
 END_TEST
 
 START_TEST(test_filter_null_array_nonzero_count) {
-  UdsCanSocket s = {.fd = 3};
+  UdsCanSocket s = {.fd = INVALID_FD_FOR_PARAM_TEST};
   ck_assert_int_eq(uds_can_set_filter(&s, NULL, 1), UDS_CAN_ERR_PARAM);
 }
 END_TEST
