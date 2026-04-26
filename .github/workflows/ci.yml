@@ -86,7 +86,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             cmake gcc g++ \
-            check libcheck-dev pkg-config \
+            check pkg-config \
             lcov
 
       - name: Configure CMake
@@ -118,7 +118,7 @@ jobs:
             echo "::notice::No C coverage data yet"
 
       - name: Upload C coverage
-        if: always()
+        if: always() && hashFiles('coverage-c.info') != ''
         uses: codecov/codecov-action@v5
         with:
           files: coverage-c.info
@@ -195,7 +195,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            cmake gcc g++ can-utils python3-pip libcheck-dev
+            cmake gcc g++ can-utils python3-pip check
 
       - name: Set up Python
         uses: actions/setup-python@v5
