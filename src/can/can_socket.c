@@ -243,3 +243,74 @@ const char *uds_can_strerror(int err) {
     return "Unknown error";
   }
 }
+
+/* ── CAN FD extensions ──────────────────────────────────────────────────── */
+
+#ifdef CAN_FD_ENABLED
+
+int uds_can_enable_fd(UdsCanSocket *sock) {
+  if (!sock || sock->fd < 0) {
+    return UDS_CAN_ERR_PARAM;
+  }
+
+  int enable = 1;
+  if (setsockopt(sock->fd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable,
+                 sizeof(enable)) < 0) {
+    return UDS_CAN_ERR_FILTER;
+  }
+
+  return UDS_CAN_OK;
+}
+
+int uds_can_send_fd(UdsCanSocket *sock, const struct canfd_frame *frame) {
+  if (!sock || sock->fd < 0 || !frame) {
+    return UDS_CAN_ERR_PARAM;
+  }
+
+  ssize_t written = write(sock->fd, frame, sizeof(*frame));
+  if (written < 0) {
+    return UDS_CAN_ERR_SEND;
+  }
+  if ((size_t)written != sizeof(*frame)) {
+    return UDS_CAN_ERR_SEND;
+  }
+
+  return UDS_CAN_OK;
+}
+
+int uds_can_recv_fd(UdsCanSocket *sock, struct canfd_frame *frame,
+                    unsigned int timeout_ms) {
+  if (!sock || sock->fd < 0 || !frame) {
+    return UDS_CAN_ERR_PARAM;
+  }
+
+  if (timeout_ms > 0) {
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(sock->fd, &rfds);
+
+    struct timeval tv;
+    tv.tv_sec = (time_t)(timeout_ms / 1000U);
+    tv.tv_usec = (suseconds_t)((timeout_ms % 1000U) * 1000U);
+
+    int ready = select(sock->fd + 1, &rfds, NULL, NULL, &tv);
+    if (ready < 0) {
+      return UDS_CAN_ERR_RECV;
+    }
+    if (ready == 0) {
+      return UDS_CAN_ERR_TIMEOUT;
+    }
+  }
+
+  ssize_t nbytes = read(sock->fd, frame, sizeof(*frame));
+  if (nbytes < 0) {
+    return UDS_CAN_ERR_RECV;
+  }
+  if ((size_t)nbytes < sizeof(*frame)) {
+    return UDS_CAN_ERR_TRUNC;
+  }
+
+  return UDS_CAN_OK;
+}
+
+#endif /* CAN_FD_ENABLED */
