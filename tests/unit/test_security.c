@@ -302,7 +302,7 @@ START_TEST(test_key_without_prior_seed_returns_nrc24) {
 }
 END_TEST
 
-START_TEST(test_key_expired_seed_returns_nrc37) {
+START_TEST(test_key_expired_seed_returns_nrc24) {
   UdsCoreSecurity sec = make_sec();
   uint8_t key[UDS_CORE_SEED_LEN];
   do_request_seed(&sec, 0x01U, key);
@@ -313,7 +313,7 @@ START_TEST(test_key_expired_seed_returns_nrc37) {
   int rc = uds_core_sec_send_key(&sec, 0x02U, key, sizeof(key),
                                   resp, sizeof(resp), &resp_len, &nrc);
   ck_assert_int_eq(rc, UDS_CORE_ERR_NRC);
-  ck_assert_uint_eq(nrc, (uint8_t)UDS_NRC_REQUIRED_TIME_DELAY_NOT_EXPIRED);
+  ck_assert_uint_eq(nrc, (uint8_t)UDS_NRC_REQUEST_SEQUENCE_ERROR);
 }
 END_TEST
 
@@ -519,7 +519,7 @@ static Suite *security_suite(void) {
   tcase_add_test(tc_key, test_key_three_failures_trigger_lockout);
   tcase_add_test(tc_key, test_key_locked_returns_nrc36);
   tcase_add_test(tc_key, test_key_without_prior_seed_returns_nrc24);
-  tcase_add_test(tc_key, test_key_expired_seed_returns_nrc37);
+  tcase_add_test(tc_key, test_key_expired_seed_returns_nrc24);
   tcase_add_test(tc_key, test_key_wrong_level_returns_nrc24);
   tcase_add_test(tc_key, test_key_odd_sub_fn_rejected);
   tcase_add_test(tc_key, test_key_wrong_length_returns_nrc13);

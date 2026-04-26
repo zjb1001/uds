@@ -7,6 +7,34 @@ this file.  The format is based on [Keep a Changelog](https://keepachangelog.com
 
 ## [1.0.0] — 2026-04-26
 
+### Fixed
+
+- **`security.c`**: Expired seed now returns NRC `0x24` (requestSequenceError)
+  instead of the incorrect `0x37` (requiredTimeDelayNotExpired).  NRC `0x37`
+  is reserved for the lockout-cooldown path; an expired seed means sendKey
+  arrives out-of-sequence.
+- **`session.c`**: DSC positive response (0x50) now encodes P2* in units of
+  **10 ms** as required by ISO 14229-1 §7.4.3.2, instead of raw milliseconds.
+  Default `p2_star_ms = 2000 ms` is now transmitted as `0x00C8` (200 × 10 ms).
+- **`flash_services.c` / `uds_flash.h`**: `addressAndLengthFormatIdentifier`
+  byte now parsed per ISO 14229-1: **high nibble = memorySize length,
+  low nibble = memoryAddress length**.  The previous implementation had the
+  nibbles swapped, causing wrong address/size extraction whenever the two
+  field widths differ.
+- **`ecusim.c`** (0x34 / 0x35 dispatch): Request bytes now correctly indexed:
+  `req[2]` is the `addressAndLengthFormatIdentifier`; address+size data starts
+  at `req[3]`.  Previously `req[1]` (the `dataFormatIdentifier` byte, always
+  `0x00`) was used as the format, causing every download/upload request to fail
+  with NRC `0x13`.
+- **`tools/uds/flash.py`**: Block sequence counter now wraps `0xFF → 0x01` per
+  ISO 14229-1 (never `0x00`).
+- **`tools/uds/ecusim.py`**:
+  - Wrong block sequence counter in 0x36 now returns NRC `0x73`
+    (wrongBlockSequenceCounter) instead of `0x24` (requestSequenceError).
+  - Block sequence counter wrap corrected to `0xFF → 0x01` (two sites).
+  - DSC response now encodes P2* in 10 ms units (`0x00C8`) to match
+    ISO 14229-1 and the C server.
+
 ### Added
 
 #### Phase 1 — Foundation

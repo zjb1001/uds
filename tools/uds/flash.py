@@ -62,7 +62,8 @@ class UdsFlashService:
             chunk = data[offset : offset + chunk_size]
             self._transfer_data(block_sn, chunk)
             offset += len(chunk)
-            block_sn = (block_sn + 1) & 0xFF
+            # ISO 14229-1: block sequence counter wraps 0xFF → 0x01 (never 0x00)
+            block_sn = 1 if block_sn >= 0xFF else block_sn + 1
             if on_progress:
                 on_progress(offset, total)
 
@@ -106,7 +107,8 @@ class UdsFlashService:
         while len(result) < length:
             chunk = self._transfer_data(block_sn, b"")
             result += chunk
-            block_sn = (block_sn + 1) & 0xFF
+            # ISO 14229-1: block sequence counter wraps 0xFF → 0x01 (never 0x00)
+            block_sn = 1 if block_sn >= 0xFF else block_sn + 1
             if on_progress:
                 on_progress(len(result), length)
 

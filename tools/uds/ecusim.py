@@ -57,6 +57,7 @@ _NRC_EXCEEDED_ATTEMPTS = 0x36
 _NRC_TIME_DELAY_NOT_EXPIRED = 0x37
 _NRC_CONDITIONS_NOT_CORRECT = 0x22
 _NRC_REQUEST_SEQUENCE_ERROR = 0x24
+_NRC_WRONG_BLOCK_SEQUENCE_COUNTER = 0x73
 
 # ── Security XOR mask (must match C implementation) ───────────────────────
 _SECURITY_MASK = bytes([0xAB, 0xCD, 0x12, 0x34])
@@ -381,7 +382,8 @@ class EcuSimulator:
             self._security_level = 0
             self._pending_seed = None
         # Response: [0x50, sessionType, P2_hi, P2_lo, P2star_hi, P2star_lo]
-        return bytes([0x50, session_type, 0x00, 0x32, 0x07, 0xD0])
+        # P2* is in units of 10 ms per ISO 14229-1 (2000 ms / 10 = 200 = 0x00C8)
+        return bytes([0x50, session_type, 0x00, 0x32, 0x00, 0xC8])
 
     # ── Service 0x3E: Tester Present ──────────────────────────────────────
 
@@ -638,7 +640,7 @@ class EcuSimulator:
 
         block_sn = req[1]
         if block_sn != (self._xfer_expected_sn & 0xFF):
-            return self._nrc(sid, _NRC_REQUEST_SEQUENCE_ERROR)
+            return self._nrc(sid, _NRC_WRONG_BLOCK_SEQUENCE_COUNTER)
 
         if self._xfer_mode == 0x34:  # download: tester sends data
             data = req[2:]
@@ -647,7 +649,8 @@ class EcuSimulator:
             chunk = data[:remaining]
             self._flash[flash_start : flash_start + len(chunk)] = chunk
             self._xfer_offset += len(chunk)
-            self._xfer_expected_sn = (self._xfer_expected_sn + 1) & 0xFF
+            # ISO 14229-1: block sequence counter wraps 0xFF → 0x01 (never 0x00)
+            self._xfer_expected_sn = 1 if self._xfer_expected_sn >= 0xFF else self._xfer_expected_sn + 1
             return bytes([0x76, block_sn])
 
         # upload: ECU sends data
@@ -656,7 +659,8 @@ class EcuSimulator:
         chunk_size = min(_FLASH_BLOCK_SIZE, remaining)
         chunk = bytes(self._flash[flash_start : flash_start + chunk_size])
         self._xfer_offset += chunk_size
-        self._xfer_expected_sn = (self._xfer_expected_sn + 1) & 0xFF
+        # ISO 14229-1: block sequence counter wraps 0xFF → 0x01 (never 0x00)
+        self._xfer_expected_sn = 1 if self._xfer_expected_sn >= 0xFF else self._xfer_expected_sn + 1
         return bytes([0x76, block_sn]) + chunk
 
     # ── Service 0x37: RequestTransferExit ────────────────────────────────

@@ -180,10 +180,11 @@ int uds_core_sec_send_key(UdsCoreSecurity *sec, uint8_t sub_fn,
     return UDS_CORE_ERR_NRC;
   }
 
-  /* Verify seed has not expired */
+  /* Verify seed has not expired — an expired seed means the sendKey arrives
+   * out of the expected sequence (no valid pending seed), so NRC 0x24. */
   if (seed_expired(sec)) {
     sec->seed_valid = false;
-    *nrc_out = (uint8_t)UDS_NRC_REQUIRED_TIME_DELAY_NOT_EXPIRED;
+    *nrc_out = (uint8_t)UDS_NRC_REQUEST_SEQUENCE_ERROR;
     return UDS_CORE_ERR_NRC;
   }
 
