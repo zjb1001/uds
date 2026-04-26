@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 from typing import Protocol, runtime_checkable
 
@@ -15,6 +16,7 @@ class _CanBus(Protocol):
     def send(self, msg: object) -> None: ...
     def recv(self, timeout: float | None = None) -> object | None: ...
     def shutdown(self) -> None: ...
+
 
 # ISO-TP frame type nibbles
 _SF = 0x0  # Single Frame
@@ -84,10 +86,8 @@ class IsoTpTransport:
     def close(self) -> None:
         """Close the CAN bus interface."""
         if self._bus is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._bus.shutdown()
-            except Exception:
-                pass
             self._bus = None
 
     # ── context manager ───────────────────────────────────────────────────

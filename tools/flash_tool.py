@@ -12,7 +12,14 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, T
 # Allow running from repo root without installation
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from uds import UdsClient, UdsFlashService, UdsNrcError, UdsSecurity, UdsSession, UdsTimeoutError  # noqa: E402
+from uds import (  # noqa: E402
+    UdsClient,
+    UdsFlashService,
+    UdsNrcError,
+    UdsSecurity,
+    UdsSession,
+    UdsTimeoutError,
+)
 
 console = Console()
 
@@ -65,8 +72,9 @@ def download(
     """Download binary FILE to ECU flash memory."""
     opts = ctx.obj
     data = file.read_bytes()
-    console.print(f"[bold]Downloading[/bold] {file.name} ({len(data):,} bytes) "
-                  f"→ 0x{opts['address']:08X}")
+    console.print(
+        f"[bold]Downloading[/bold] {file.name} ({len(data):,} bytes) → 0x{opts['address']:08X}"
+    )
 
     with Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -121,8 +129,9 @@ def upload(
 ) -> None:
     """Upload ECU flash memory region to FILE."""
     opts = ctx.obj
-    console.print(f"[bold]Uploading[/bold] 0x{opts['address']:08X} ({length:,} bytes)"
-                  f" → {file.name}")
+    console.print(
+        f"[bold]Uploading[/bold] 0x{opts['address']:08X} ({length:,} bytes) → {file.name}"
+    )
 
     with Progress(
         TextColumn("[progress.description]{task.description}"),

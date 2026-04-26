@@ -37,10 +37,7 @@ class UdsDidService:
         dict[int, bytes]
             Mapping of DID → raw data bytes.
         """
-        if isinstance(did_id, int):
-            dids = [did_id]
-        else:
-            dids = list(did_id)
+        dids = [did_id] if isinstance(did_id, int) else list(did_id)
 
         request = bytearray([_SID_READ_DID])
         for did in dids:
@@ -69,7 +66,7 @@ class UdsDidService:
         # requested order; each record is [did_hi, did_lo, data...] where data
         # continues until the next DID or end of payload.
         idx = 0
-        for i, did in enumerate(dids):
+        for i, _did in enumerate(dids):
             if idx + 2 > len(payload):
                 break
             resp_did = (payload[idx] << 8) | payload[idx + 1]

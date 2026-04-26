@@ -14,9 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from uds import (  # noqa: E402
     UdsClient,
-    UdsDtcService,
     UdsDidService,
-    UdsNrc,
+    UdsDtcService,
     UdsNrcError,
     UdsSecurity,
     UdsSession,
@@ -178,8 +177,9 @@ def clear_dtc(ctx: click.Context, group: int) -> None:
 
 
 @cli.command()
-@click.option("--reset-type", default=1, show_default=True, type=int,
-              help="1=hard, 2=keyOffOn, 3=soft.")
+@click.option(
+    "--reset-type", default=1, show_default=True, type=int, help="1=hard, 2=keyOffOn, 3=soft."
+)
 @click.pass_context
 def reset(ctx: click.Context, reset_type: int) -> None:
     """Send ECU Reset (0x11)."""

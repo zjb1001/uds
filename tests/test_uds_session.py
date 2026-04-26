@@ -31,9 +31,7 @@ def _session_with_response(response: bytes) -> UdsSession:
 class TestDscResponseParsing:
     """Diagnostic Session Control (0x10) response parsing."""
 
-    def _build_dsc_response(
-        self, session_type: int, p2_ms: int, p2_star_10ms: int
-    ) -> bytes:
+    def _build_dsc_response(self, session_type: int, p2_ms: int, p2_star_10ms: int) -> bytes:
         """Build a 6-byte positive DSC response."""
         return struct.pack(">BBHH", 0x50, session_type, p2_ms, p2_star_10ms)
 

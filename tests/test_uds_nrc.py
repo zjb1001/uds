@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
-
 import sys
 from pathlib import Path
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 
 from uds.nrc import UdsNrc
@@ -18,11 +19,28 @@ class TestUdsNrcValues:
     @pytest.mark.parametrize(
         "value",
         [
-            0x10, 0x11, 0x12, 0x13, 0x14,
-            0x21, 0x22, 0x24, 0x25, 0x26,
-            0x31, 0x33, 0x35, 0x36, 0x37,
-            0x70, 0x71, 0x72, 0x73, 0x78,
-            0x7E, 0x7F,
+            0x10,
+            0x11,
+            0x12,
+            0x13,
+            0x14,
+            0x21,
+            0x22,
+            0x24,
+            0x25,
+            0x26,
+            0x31,
+            0x33,
+            0x35,
+            0x36,
+            0x37,
+            0x70,
+            0x71,
+            0x72,
+            0x73,
+            0x78,
+            0x7E,
+            0x7F,
         ],
     )
     def test_all_values_instantiable(self, value: int) -> None:

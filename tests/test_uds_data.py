@@ -71,7 +71,7 @@ class TestWriteDidEncoding:
         mock_client = MagicMock()
         mock_client._request.return_value = bytes([0x6E, 0x01, 0x00])
         svc = UdsDidService(mock_client)
-        svc.write(0x0100, b"\xDE\xAD")
+        svc.write(0x0100, b"\xde\xad")
         call_bytes = mock_client._request.call_args[0][0]
         assert call_bytes == bytes([0x2E, 0x01, 0x00, 0xDE, 0xAD])
 
@@ -150,7 +150,7 @@ class TestReadDidResponseParsing:
         response = bytes([0x62, 0x00, 0x01, 0xFF])
         svc = _did_service(response)
         result = svc.read(0x0001)
-        assert result[0x0001] == b"\xFF"
+        assert result[0x0001] == b"\xff"
 
     def test_empty_data_did(self) -> None:
         """Response with DID but no data bytes → empty bytes."""

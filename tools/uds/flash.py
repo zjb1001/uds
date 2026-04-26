@@ -98,8 +98,7 @@ class UdsFlashService:
         bytes
             The uploaded data.
         """
-        max_block_len = self._request_upload(address, length, addr_len, size_len)
-        chunk_size = max(1, max_block_len - 1)
+        self._request_upload(address, length, addr_len, size_len)
 
         result = bytearray()
         block_sn = 1
@@ -116,9 +115,7 @@ class UdsFlashService:
 
     # ── private helpers ───────────────────────────────────────────────────
 
-    def _request_download(
-        self, address: int, size: int, addr_len: int, size_len: int
-    ) -> int:
+    def _request_download(self, address: int, size: int, addr_len: int, size_len: int) -> int:
         """Send RequestDownload (0x34) and return maxBlockLength."""
         addr_and_len_fmt = ((size_len & 0x0F) << 4) | (addr_len & 0x0F)
         request = (
@@ -143,9 +140,7 @@ class UdsFlashService:
         max_block_len = int.from_bytes(response[2 : 2 + mbl_len], "big")
         return max_block_len
 
-    def _request_upload(
-        self, address: int, size: int, addr_len: int, size_len: int
-    ) -> int:
+    def _request_upload(self, address: int, size: int, addr_len: int, size_len: int) -> int:
         """Send RequestUpload (0x35) and return maxBlockLength."""
         addr_and_len_fmt = ((size_len & 0x0F) << 4) | (addr_len & 0x0F)
         request = (

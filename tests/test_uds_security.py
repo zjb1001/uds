@@ -27,18 +27,18 @@ class TestComputeKey:
         """seed=0x00000000 → key=0xABCD1234."""
         sec = _make_security()
         key = sec.compute_key(b"\x00\x00\x00\x00")
-        assert key == b"\xAB\xCD\x12\x34"
+        assert key == b"\xab\xcd\x12\x34"
 
     def test_all_ones_seed(self) -> None:
         """seed=0xFFFFFFFF → key=0x5432EDCB."""
         sec = _make_security()
-        key = sec.compute_key(b"\xFF\xFF\xFF\xFF")
-        assert key == b"\x54\x32\xED\xCB"
+        key = sec.compute_key(b"\xff\xff\xff\xff")
+        assert key == b"\x54\x32\xed\xcb"
 
     def test_mask_as_seed(self) -> None:
         """seed=0xABCD1234 → key=0x00000000 (XOR with itself)."""
         sec = _make_security()
-        key = sec.compute_key(b"\xAB\xCD\x12\x34")
+        key = sec.compute_key(b"\xab\xcd\x12\x34")
         assert key == b"\x00\x00\x00\x00"
 
     def test_key_length_matches_seed(self) -> None:
@@ -52,12 +52,12 @@ class TestComputeKey:
     def test_single_byte_seed(self) -> None:
         """seed=0x00 → key=0xAB (first mask byte)."""
         sec = _make_security()
-        assert sec.compute_key(b"\x00") == b"\xAB"
+        assert sec.compute_key(b"\x00") == b"\xab"
 
     def test_single_byte_seed_ff(self) -> None:
         """seed=0xFF → key=0x54 (0xFF XOR 0xAB)."""
         sec = _make_security()
-        assert sec.compute_key(b"\xFF") == b"\x54"
+        assert sec.compute_key(b"\xff") == b"\x54"
 
     def test_mask_wraps_for_longer_seeds(self) -> None:
         """Mask cycles for seeds longer than 4 bytes."""
@@ -65,7 +65,7 @@ class TestComputeKey:
         seed = b"\x00" * 8
         key = sec.compute_key(seed)
         # mask repeats: AB CD 12 34 AB CD 12 34
-        assert key == b"\xAB\xCD\x12\x34\xAB\xCD\x12\x34"
+        assert key == b"\xab\xcd\x12\x34\xab\xcd\x12\x34"
 
     def test_xor_is_reversible(self) -> None:
         """compute_key(compute_key(seed)) == seed."""
