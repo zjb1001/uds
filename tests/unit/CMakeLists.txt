@@ -51,3 +51,51 @@ add_test(
     NAME    uds_tp_unit_tests
     COMMAND test_iso_tp
 )
+
+# ── uds_core session unit tests ──────────────────────────────────────────────
+add_executable(test_session
+    test_session.c
+)
+
+target_include_directories(test_session PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_session PRIVATE
+    uds_core
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_session PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_core_session_unit_tests
+    COMMAND test_session
+)
+
+# ── uds_core security unit tests ─────────────────────────────────────────────
+add_executable(test_security
+    test_security.c
+)
+
+target_include_directories(test_security PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_security PRIVATE
+    uds_core
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_security PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_core_security_unit_tests
+    COMMAND test_security
+)
