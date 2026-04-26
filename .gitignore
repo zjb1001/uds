@@ -52,3 +52,5 @@ ENV/
 # Temporary files
 *.tmp
 *.temp
+build_fd/
+build_classic/

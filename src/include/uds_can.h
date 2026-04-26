@@ -6,6 +6,11 @@
  * Covers socket lifecycle, CAN frame send/receive, CAN ID filter management,
  * and UDS-specific CAN ID helpers (0x600/0x680 scheme, functional 0x7DF).
  *
+ * CAN FD support (64-byte frames) is available when the library is built
+ * with -DENABLE_CAN_FD=ON (which defines CAN_FD_ENABLED).  The FD helpers
+ * (uds_can_enable_fd, uds_can_send_fd, uds_can_recv_fd) are only compiled
+ * and exported in that configuration.
+ *
  * All functions are thread-safe with respect to distinct file descriptors.
  * Sharing a single fd across threads requires external locking by the caller.
  *
@@ -199,6 +204,52 @@ unsigned int uds_can_ecu_filters(UdsCanFilter *filters, uint8_t ecu_id);
  * @return Pointer to a static string; never NULL.
  */
 const char *uds_can_strerror(int err);
+
+/* ── CAN FD extensions ──────────────────────────────────────────────────── */
+
+#ifdef CAN_FD_ENABLED
+
+#include <linux/can/raw.h>
+
+/**
+ * @brief Enable CAN FD frame reception and transmission on @p sock.
+ *
+ * Must be called after uds_can_open() and before any uds_can_send_fd() or
+ * uds_can_recv_fd() call.  Sets the CAN_RAW_FD_FRAMES socket option so that
+ * the kernel accepts 64-byte canfd_frame structures on this socket.
+ *
+ * @param[in] sock Open socket handle.
+ * @return UDS_CAN_OK on success, or UDS_CAN_ERR_PARAM / UDS_CAN_ERR_FILTER.
+ */
+int uds_can_enable_fd(UdsCanSocket *sock);
+
+/**
+ * @brief Send a single CAN FD frame (up to 64 bytes of payload).
+ *
+ * The socket must have been prepared with uds_can_enable_fd() first.
+ *
+ * @param[in] sock  Open socket handle.
+ * @param[in] frame CAN FD frame to transmit.
+ * @return UDS_CAN_OK on success, or UDS_CAN_ERR_PARAM / UDS_CAN_ERR_SEND.
+ */
+int uds_can_send_fd(UdsCanSocket *sock, const struct canfd_frame *frame);
+
+/**
+ * @brief Receive a single CAN FD frame, with an optional timeout.
+ *
+ * Blocks until a frame arrives or the timeout expires.  The socket must have
+ * been prepared with uds_can_enable_fd() first.
+ *
+ * @param[in]  sock       Open socket handle.
+ * @param[out] frame      Buffer to receive into (must be sizeof(canfd_frame)).
+ * @param[in]  timeout_ms Timeout in milliseconds; 0 = block indefinitely.
+ * @return UDS_CAN_OK on success, UDS_CAN_ERR_TIMEOUT if the deadline elapsed
+ *         without a frame, or another negative UdsCanError on error.
+ */
+int uds_can_recv_fd(UdsCanSocket *sock, struct canfd_frame *frame,
+                    unsigned int timeout_ms);
+
+#endif /* CAN_FD_ENABLED */
 
 #ifdef __cplusplus
 }

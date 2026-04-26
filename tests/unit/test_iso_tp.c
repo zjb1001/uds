@@ -808,6 +808,318 @@ START_TEST(test_vcan_recv_timeout_sf) {
 END_TEST
 
 /* ════════════════════════════════════════════════════════════════════════════
+ * Suite 8: CAN FD encode / decode (compiled only when CAN_FD_ENABLED)
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
+#ifdef CAN_FD_ENABLED
+
+/* ── CAN FD frame type classification ───────────────────────────── */
+
+START_TEST(test_fd_frame_type_sf_classic) {
+  struct canfd_frame f = {0};
+  f.len = 4;
+  f.data[0] = 0x03; /* SF, classic 1-byte PCI */
+  ck_assert_int_eq(uds_tp_frame_type_fd(&f), UDS_TP_FRAME_SF);
+}
+END_TEST
+
+START_TEST(test_fd_frame_type_sf_escape) {
+  struct canfd_frame f = {0};
+  f.len = 12;
+  f.data[0] = 0x00; /* SF escape: data[0]=0, data[1]=SF_DL */
+  f.data[1] = 0x0A;
+  ck_assert_int_eq(uds_tp_frame_type_fd(&f), UDS_TP_FRAME_SF);
+}
+END_TEST
+
+START_TEST(test_fd_frame_type_ff) {
+  struct canfd_frame f = {0};
+  f.len = 64;
+  f.data[0] = 0x10;
+  f.data[1] = 0x50; /* FF_DL = 80 */
+  ck_assert_int_eq(uds_tp_frame_type_fd(&f), UDS_TP_FRAME_FF);
+}
+END_TEST
+
+START_TEST(test_fd_frame_type_cf) {
+  struct canfd_frame f = {0};
+  f.len = 64;
+  f.data[0] = 0x21; /* CF, SN=1 */
+  ck_assert_int_eq(uds_tp_frame_type_fd(&f), UDS_TP_FRAME_CF);
+}
+END_TEST
+
+START_TEST(test_fd_frame_type_null) {
+  ck_assert_int_eq(uds_tp_frame_type_fd(NULL), UDS_TP_FRAME_UNKNOWN);
+}
+END_TEST
+
+START_TEST(test_fd_frame_type_zero_len) {
+  struct canfd_frame f = {0};
+  f.len = 0;
+  f.data[0] = 0x01;
+  ck_assert_int_eq(uds_tp_frame_type_fd(&f), UDS_TP_FRAME_UNKNOWN);
+}
+END_TEST
+
+/* ── CAN FD Single Frame encode / decode ───────────────────────── */
+
+START_TEST(test_fd_encode_sf_classic_len) {
+  /* Payload ≤ 7 bytes: uses the classic 1-byte PCI */
+  uint8_t data[] = {0x22, 0xF1, 0x90};
+  struct canfd_frame f;
+  int rc = uds_tp_encode_sf_fd(&f, 0x601U, data, 3);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(f.can_id, 0x601U);
+  ck_assert_uint_eq(f.len, 4U);         /* 1 PCI + 3 data */
+  ck_assert_uint_eq(f.data[0], 0x03U);  /* classic SF PCI */
+  ck_assert_int_eq(memcmp(&f.data[1], data, 3), 0);
+}
+END_TEST
+
+START_TEST(test_fd_encode_sf_escape_8_bytes) {
+  /* Payload = 8 bytes: must use the CAN FD escape sequence */
+  uint8_t data[8];
+  for (int i = 0; i < 8; i++) {
+    data[i] = (uint8_t)i;
+  }
+  struct canfd_frame f;
+  int rc = uds_tp_encode_sf_fd(&f, 0x601U, data, 8);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(f.len, 10U);        /* 2 PCI + 8 data */
+  ck_assert_uint_eq(f.data[0], 0x00U);  /* escape byte */
+  ck_assert_uint_eq(f.data[1], 0x08U);  /* SF_DL = 8 */
+  ck_assert_int_eq(memcmp(&f.data[2], data, 8), 0);
+}
+END_TEST
+
+START_TEST(test_fd_encode_sf_escape_max) {
+  /* Payload = 62 bytes (UDS_TP_CANFD_SF_MAX_DATA) */
+  uint8_t data[UDS_TP_CANFD_SF_MAX_DATA];
+  memset(data, 0x5A, sizeof(data));
+  struct canfd_frame f;
+  int rc = uds_tp_encode_sf_fd(&f, 0x601U, data, UDS_TP_CANFD_SF_MAX_DATA);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(f.len, 64U);        /* 2 PCI + 62 data */
+  ck_assert_uint_eq(f.data[0], 0x00U);
+  ck_assert_uint_eq(f.data[1], UDS_TP_CANFD_SF_MAX_DATA);
+  ck_assert_int_eq(memcmp(&f.data[2], data, UDS_TP_CANFD_SF_MAX_DATA), 0);
+}
+END_TEST
+
+START_TEST(test_fd_encode_sf_len_zero) {
+  uint8_t data = 0xAA;
+  struct canfd_frame f;
+  ck_assert_int_eq(uds_tp_encode_sf_fd(&f, 0x601U, &data, 0), UDS_TP_ERR_PARAM);
+}
+END_TEST
+
+START_TEST(test_fd_encode_sf_len_too_large) {
+  uint8_t data[63] = {0};
+  struct canfd_frame f;
+  ck_assert_int_eq(uds_tp_encode_sf_fd(&f, 0x601U, data, 63),
+                   UDS_TP_ERR_PARAM);
+}
+END_TEST
+
+START_TEST(test_fd_decode_sf_classic) {
+  uint8_t payload[] = {0xAB, 0xCD, 0xEF};
+  struct canfd_frame f;
+  uds_tp_encode_sf_fd(&f, 0x601U, payload, 3);
+
+  uint8_t buf[64];
+  size_t out_len = 0;
+  int rc = uds_tp_decode_sf_fd(&f, buf, sizeof(buf), &out_len);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(out_len, 3U);
+  ck_assert_int_eq(memcmp(buf, payload, 3), 0);
+}
+END_TEST
+
+START_TEST(test_fd_decode_sf_escape) {
+  uint8_t payload[10];
+  for (int i = 0; i < 10; i++) {
+    payload[i] = (uint8_t)(0x10 + i);
+  }
+  struct canfd_frame f;
+  uds_tp_encode_sf_fd(&f, 0x601U, payload, 10);
+
+  uint8_t buf[64];
+  size_t out_len = 0;
+  int rc = uds_tp_decode_sf_fd(&f, buf, sizeof(buf), &out_len);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(out_len, 10U);
+  ck_assert_int_eq(memcmp(buf, payload, 10), 0);
+}
+END_TEST
+
+START_TEST(test_fd_sf_roundtrip_escape_max) {
+  uint8_t orig[UDS_TP_CANFD_SF_MAX_DATA];
+  for (size_t i = 0; i < UDS_TP_CANFD_SF_MAX_DATA; i++) {
+    orig[i] = (uint8_t)(i & 0xFFU);
+  }
+  struct canfd_frame f;
+  uds_tp_encode_sf_fd(&f, 0x700U, orig, UDS_TP_CANFD_SF_MAX_DATA);
+
+  uint8_t recovered[UDS_TP_CANFD_SF_MAX_DATA];
+  size_t recovered_len = 0;
+  int rc = uds_tp_decode_sf_fd(&f, recovered, sizeof(recovered), &recovered_len);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(recovered_len, UDS_TP_CANFD_SF_MAX_DATA);
+  ck_assert_int_eq(memcmp(recovered, orig, UDS_TP_CANFD_SF_MAX_DATA), 0);
+}
+END_TEST
+
+/* ── CAN FD First Frame encode / decode ────────────────────────── */
+
+START_TEST(test_fd_encode_ff_regular) {
+  /* Regular FF: FF_DL = 100 (≤ 4095) */
+  uint8_t data[100];
+  for (int i = 0; i < 100; i++) {
+    data[i] = (uint8_t)i;
+  }
+  struct canfd_frame f;
+  int rc = uds_tp_encode_ff_fd(&f, 0x601U, data, 100U);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  /* PCI: 0x10 | (100 >> 8) = 0x10, 100 & 0xFF = 0x64 */
+  ck_assert_uint_eq(f.data[0], 0x10U);
+  ck_assert_uint_eq(f.data[1], 0x64U);
+  /* First 62 data bytes embedded */
+  ck_assert_int_eq(memcmp(&f.data[2], data, UDS_TP_CANFD_FF_DATA_BYTES), 0);
+  ck_assert_uint_eq(f.len, 2U + UDS_TP_CANFD_FF_DATA_BYTES);
+}
+END_TEST
+
+START_TEST(test_fd_encode_ff_extended) {
+  /* Extended FF: FF_DL = 5000 (> 4095) */
+  uint8_t data[100];
+  memset(data, 0xAA, sizeof(data));
+  struct canfd_frame f;
+  int rc = uds_tp_encode_ff_fd(&f, 0x601U, data, 5000U);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  /* Extended PCI: data[0]=0x10, data[1]=0x00, data[2..5]=FF_DL big-endian */
+  ck_assert_uint_eq(f.data[0], 0x10U);
+  ck_assert_uint_eq(f.data[1], 0x00U);
+  ck_assert_uint_eq(f.data[2], 0x00U);
+  ck_assert_uint_eq(f.data[3], 0x00U);
+  ck_assert_uint_eq(f.data[4], 0x13U); /* 5000 >> 8 = 0x13 */
+  ck_assert_uint_eq(f.data[5], 0x88U); /* 5000 & 0xFF = 0x88 */
+  /* First 58 data bytes embedded */
+  ck_assert_int_eq(memcmp(&f.data[6], data, UDS_TP_CANFD_FF_EXT_DATA_BYTES), 0);
+  ck_assert_uint_eq(f.len, 6U + UDS_TP_CANFD_FF_EXT_DATA_BYTES);
+}
+END_TEST
+
+START_TEST(test_fd_decode_ff_regular) {
+  uint8_t data[100];
+  for (int i = 0; i < 100; i++) {
+    data[i] = (uint8_t)(i + 1);
+  }
+  struct canfd_frame f;
+  uds_tp_encode_ff_fd(&f, 0x601U, data, 100U);
+
+  uint8_t buf[UDS_TP_CANFD_FF_DATA_BYTES];
+  uint32_t total_len = 0U;
+  size_t ff_data_bytes = 0U;
+  int rc = uds_tp_decode_ff_fd(&f, buf, sizeof(buf), &total_len, &ff_data_bytes);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(total_len, 100U);
+  ck_assert_uint_eq(ff_data_bytes, UDS_TP_CANFD_FF_DATA_BYTES);
+  ck_assert_int_eq(memcmp(buf, data, UDS_TP_CANFD_FF_DATA_BYTES), 0);
+}
+END_TEST
+
+START_TEST(test_fd_decode_ff_extended) {
+  uint8_t data[100];
+  memset(data, 0xBB, sizeof(data));
+  struct canfd_frame f;
+  uds_tp_encode_ff_fd(&f, 0x601U, data, 5000U);
+
+  uint8_t buf[UDS_TP_CANFD_FF_EXT_DATA_BYTES];
+  uint32_t total_len = 0U;
+  size_t ff_data_bytes = 0U;
+  int rc = uds_tp_decode_ff_fd(&f, buf, sizeof(buf), &total_len, &ff_data_bytes);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(total_len, 5000U);
+  ck_assert_uint_eq(ff_data_bytes, UDS_TP_CANFD_FF_EXT_DATA_BYTES);
+  ck_assert_int_eq(memcmp(buf, data, UDS_TP_CANFD_FF_EXT_DATA_BYTES), 0);
+}
+END_TEST
+
+/* ── CAN FD Consecutive Frame encode / decode ──────────────────── */
+
+START_TEST(test_fd_encode_cf_max) {
+  /* 63-byte CF chunk */
+  uint8_t chunk[UDS_TP_CANFD_CF_DATA_BYTES];
+  memset(chunk, 0x77, sizeof(chunk));
+  struct canfd_frame f;
+  int rc = uds_tp_encode_cf_fd(&f, 0x601U, chunk, UDS_TP_CANFD_CF_DATA_BYTES, 1U);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(f.len, 64U);
+  ck_assert_uint_eq(f.data[0], 0x21U); /* CF PCI: SN=1 */
+  ck_assert_int_eq(memcmp(&f.data[1], chunk, UDS_TP_CANFD_CF_DATA_BYTES), 0);
+}
+END_TEST
+
+START_TEST(test_fd_decode_cf_max) {
+  uint8_t chunk[UDS_TP_CANFD_CF_DATA_BYTES];
+  for (size_t i = 0; i < UDS_TP_CANFD_CF_DATA_BYTES; i++) {
+    chunk[i] = (uint8_t)(i & 0xFFU);
+  }
+  struct canfd_frame f;
+  uds_tp_encode_cf_fd(&f, 0x601U, chunk, UDS_TP_CANFD_CF_DATA_BYTES, 3U);
+
+  uint8_t buf[UDS_TP_CANFD_CF_DATA_BYTES];
+  uint8_t sn = 0U;
+  int rc = uds_tp_decode_cf_fd(&f, &sn, buf, sizeof(buf),
+                                UDS_TP_CANFD_CF_DATA_BYTES);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(sn, 3U);
+  ck_assert_int_eq(memcmp(buf, chunk, UDS_TP_CANFD_CF_DATA_BYTES), 0);
+}
+END_TEST
+
+START_TEST(test_fd_cf_sn_wrap) {
+  uint8_t chunk[1] = {0xAA};
+  struct canfd_frame f;
+  uds_tp_encode_cf_fd(&f, 0x601U, chunk, 1U, 15U);
+  ck_assert_uint_eq(f.data[0], 0x2FU); /* SN=15 */
+  uds_tp_encode_cf_fd(&f, 0x601U, chunk, 1U, 16U);
+  ck_assert_uint_eq(f.data[0], 0x20U); /* SN=16 lower nibble = 0 */
+}
+END_TEST
+
+/* ── CAN FD Flow Control encode / decode ───────────────────────── */
+
+START_TEST(test_fd_encode_fc_cts) {
+  struct canfd_frame f;
+  int rc = uds_tp_encode_fc_fd(&f, 0x681U, UDS_TP_FC_CTS, 0U, 0U);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_uint_eq(f.len, 3U);
+  ck_assert_uint_eq(f.data[0], 0x30U);
+  ck_assert_uint_eq(f.data[1], 0x00U);
+  ck_assert_uint_eq(f.data[2], 0x00U);
+}
+END_TEST
+
+START_TEST(test_fd_decode_fc_cts) {
+  struct canfd_frame f;
+  uds_tp_encode_fc_fd(&f, 0x681U, UDS_TP_FC_CTS, 5U, 0x0AU);
+
+  UdsTpFlowStatus fs;
+  uint8_t bs, stmin;
+  int rc = uds_tp_decode_fc_fd(&f, &fs, &bs, &stmin);
+  ck_assert_int_eq(rc, UDS_TP_OK);
+  ck_assert_int_eq((int)fs, (int)UDS_TP_FC_CTS);
+  ck_assert_uint_eq(bs, 5U);
+  ck_assert_uint_eq(stmin, 0x0AU);
+}
+END_TEST
+
+#endif /* CAN_FD_ENABLED */
+
+/* ════════════════════════════════════════════════════════════════════════════
  * Test suite / runner wiring
  * ════════════════════════════════════════════════════════════════════════════
  */
@@ -898,6 +1210,35 @@ static Suite *iso_tp_suite(void) {
   tcase_add_test(tc_vcan, test_vcan_send_recv_multiframe);
   tcase_add_test(tc_vcan, test_vcan_recv_timeout_sf);
   suite_add_tcase(s, tc_vcan);
+
+#ifdef CAN_FD_ENABLED
+  /* ── CAN FD encode / decode ────────────────────────────────── */
+  TCase *tc_fd = tcase_create("canfd");
+  tcase_add_test(tc_fd, test_fd_frame_type_sf_classic);
+  tcase_add_test(tc_fd, test_fd_frame_type_sf_escape);
+  tcase_add_test(tc_fd, test_fd_frame_type_ff);
+  tcase_add_test(tc_fd, test_fd_frame_type_cf);
+  tcase_add_test(tc_fd, test_fd_frame_type_null);
+  tcase_add_test(tc_fd, test_fd_frame_type_zero_len);
+  tcase_add_test(tc_fd, test_fd_encode_sf_classic_len);
+  tcase_add_test(tc_fd, test_fd_encode_sf_escape_8_bytes);
+  tcase_add_test(tc_fd, test_fd_encode_sf_escape_max);
+  tcase_add_test(tc_fd, test_fd_encode_sf_len_zero);
+  tcase_add_test(tc_fd, test_fd_encode_sf_len_too_large);
+  tcase_add_test(tc_fd, test_fd_decode_sf_classic);
+  tcase_add_test(tc_fd, test_fd_decode_sf_escape);
+  tcase_add_test(tc_fd, test_fd_sf_roundtrip_escape_max);
+  tcase_add_test(tc_fd, test_fd_encode_ff_regular);
+  tcase_add_test(tc_fd, test_fd_encode_ff_extended);
+  tcase_add_test(tc_fd, test_fd_decode_ff_regular);
+  tcase_add_test(tc_fd, test_fd_decode_ff_extended);
+  tcase_add_test(tc_fd, test_fd_encode_cf_max);
+  tcase_add_test(tc_fd, test_fd_decode_cf_max);
+  tcase_add_test(tc_fd, test_fd_cf_sn_wrap);
+  tcase_add_test(tc_fd, test_fd_encode_fc_cts);
+  tcase_add_test(tc_fd, test_fd_decode_fc_cts);
+  suite_add_tcase(s, tc_fd);
+#endif /* CAN_FD_ENABLED */
 
   return s;
 }
