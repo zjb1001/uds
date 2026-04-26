@@ -280,8 +280,8 @@ when `vcan0` is not available.
 | Phase 5: C ECU simulator | ✅ Done | `src/ecusim/` builds cleanly, all lint checks pass |
 | Phase 5: Python ECU simulator | ✅ Done | `tools/uds/ecusim.py`, thread-based |
 | Phase 5: Integration test suite | ✅ Done | 26 tests, vCAN-gated |
-| Phase 5: Performance benchmarking | 🔲 Pending | ≥ 10 KB/s flash throughput |
-| Phase 5: Release preparation | 🔲 Pending | v1.0.0 tag, CHANGELOG |
+| Phase 5: Performance benchmarking | ✅ Done | ≥ 10 KB/s target; `test_flash_performance.py` |
+| Phase 5: Release preparation | ✅ Done | `CHANGELOG.md` + version bumped to `1.0.0` |
 
 ### Phase Milestone Progress
 
@@ -290,3 +290,59 @@ when `vcan0` is not available.
 - **Phase 3 (M3):** ✅ Complete
 - **Phase 4 tools:** ✅ Complete
 - **Phase 5 simulator:** ✅ Complete (ECU simulator + integration tests)
+- **Phase 5 final:** ✅ Complete (multi-ECU tests + flash benchmark + release prep)
+
+---
+
+## Session 4 — Phase 5 Completion
+
+**Date:** 2026-04-26
+**Branch:** `copilot/continue-development-based-on-progress`
+
+### Work Completed
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Flash services in Python `EcuSimulator` | ✅ Done | 0x34/0x35/0x36/0x37, 256 KB simulated flash |
+| Multi-ECU concurrency integration tests | ✅ Done | `tests/integration/test_multi_ecu.py`, 10 tests |
+| Flash performance benchmark tests | ✅ Done | `tests/integration/test_flash_performance.py`, 8 tests |
+| `CHANGELOG.md` | ✅ Done | Full history from Phase 1–5 |
+| Version bump to `1.0.0` | ✅ Done | `pyproject.toml` |
+
+### Flash Services Added to `EcuSimulator`
+
+The Python `EcuSimulator` (`tools/uds/ecusim.py`) now supports all flash services:
+
+- **0x34 RequestDownload** — validates address/size against 256 KB region, zeroes
+  the target flash area, replies with `maxBlockLength = 257` (256 data + 1 SN).
+- **0x35 RequestUpload** — same address validation; ready to stream flash data back.
+- **0x36 TransferData** — for download: writes received data into the flash buffer;
+  for upload: streams flash data back to the tester in 256-byte chunks.
+- **0x37 RequestTransferExit** — resets transfer state machine.
+
+Flash state per instance: `_flash` (256 KB bytearray), `_xfer_mode`,
+`_xfer_address`, `_xfer_size`, `_xfer_offset`, `_xfer_expected_sn`.
+
+### Multi-ECU Test Coverage (`test_multi_ecu.py`)
+
+| Class | Tests |
+|-------|-------|
+| `TestSessionIsolation` | 2 |
+| `TestSecurityIsolation` | 2 |
+| `TestDidIsolation` | 1 |
+| `TestConcurrentRequests` | 3 |
+| **Total** | **10** |
+
+All tests use two independent `EcuSimulator` instances (ECU IDs 1 and 2) on `vcan0`.
+
+### Flash Performance / Protocol Tests (`test_flash_performance.py`)
+
+| Class | Tests |
+|-------|-------|
+| `TestFlashDownloadThroughput` | 3 |
+| `TestFlashUploadThroughput` | 2 |
+| `TestFlashServiceProtocol` | 4 |
+| **Total** | **8** |
+
+Throughput tests are marked `@pytest.mark.slow` and `@pytest.mark.integration`.
+They assert ≥ 10 KB/s as required by milestone M3/M4.

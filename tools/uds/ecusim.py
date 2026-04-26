@@ -15,6 +15,10 @@ Supported services
 - 0x11  ECUReset
 - 0x14  ClearDiagnosticInformation
 - 0x19  ReadDTCInformation (sub-fn 0x01 / 0x02 / 0x0A)
+- 0x34  RequestDownload
+- 0x35  RequestUpload
+- 0x36  TransferData
+- 0x37  RequestTransferExit
 """
 
 from __future__ import annotations
@@ -59,6 +63,13 @@ _SECURITY_MASK = bytes([0xAB, 0xCD, 0x12, 0x34])
 _SEED_LEN = 4
 _MAX_ATTEMPTS = 3
 _LOCKOUT_SECS = 300
+
+# ── Flash simulation ───────────────────────────────────────────────────────
+_FLASH_BASE = 0x00000000
+_FLASH_SIZE = 256 * 1024  # 256 KB simulated flash region
+_FLASH_BLOCK_SIZE = 256  # max data bytes per TransferData request
+# maxBlockLength reported to client: block_size + 1 (sequence number byte)
+_FLASH_MAX_BLOCK_LEN = _FLASH_BLOCK_SIZE + 1
 
 
 def _compute_key(seed: bytes) -> bytes:
@@ -147,6 +158,15 @@ class EcuSimulator:
 
         # DTC table
         self._dtcs: dict[int, int] = dict(self.DEFAULT_DTCS)
+
+        # Flash memory simulation
+        self._flash: bytearray = bytearray(_FLASH_SIZE)
+        # Transfer session state
+        self._xfer_mode: int = 0  # 0=idle, 0x34=download, 0x35=upload
+        self._xfer_address: int = 0
+        self._xfer_size: int = 0
+        self._xfer_offset: int = 0
+        self._xfer_expected_sn: int = 1
 
     # ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -334,6 +354,10 @@ class EcuSimulator:
             0x11: self._svc_ecu_reset,
             0x14: self._svc_clear_dtc,
             0x19: self._svc_read_dtc,
+            0x34: self._svc_request_download,
+            0x35: self._svc_request_upload,
+            0x36: self._svc_transfer_data,
+            0x37: self._svc_transfer_exit,
         }
 
         handler = handlers.get(sid)
@@ -533,3 +557,113 @@ class EcuSimulator:
             return bytes(result)
 
         return self._nrc(sid, _NRC_SUB_FUNCTION_NOT_SUPPORTED)
+
+    # ── Service 0x34: RequestDownload ─────────────────────────────────────
+
+    def _svc_request_download(self, req: bytes) -> bytes:
+        sid = 0x34
+        # Minimum: [0x34, dataFormatIdentifier, addressAndLengthFormatIdentifier,
+        #           address bytes..., size bytes...]
+        if len(req) < 4:
+            return self._nrc(sid, _NRC_INCORRECT_MSG_LEN)
+
+        addr_len_fmt = req[2]
+        addr_len = addr_len_fmt & 0x0F
+        size_len = (addr_len_fmt >> 4) & 0x0F
+        if addr_len == 0 or size_len == 0:
+            return self._nrc(sid, _NRC_REQUEST_OUT_OF_RANGE)
+        if len(req) < 3 + addr_len + size_len:
+            return self._nrc(sid, _NRC_INCORRECT_MSG_LEN)
+
+        address = int.from_bytes(req[3 : 3 + addr_len], "big")
+        size = int.from_bytes(req[3 + addr_len : 3 + addr_len + size_len], "big")
+
+        if address < _FLASH_BASE or address + size > _FLASH_BASE + _FLASH_SIZE:
+            return self._nrc(sid, _NRC_REQUEST_OUT_OF_RANGE)
+
+        # Abort any active transfer
+        self._xfer_mode = 0x34
+        self._xfer_address = address
+        self._xfer_size = size
+        self._xfer_offset = 0
+        self._xfer_expected_sn = 1
+
+        # Erase (zero) the target region
+        start = address - _FLASH_BASE
+        self._flash[start : start + size] = bytearray(size)
+
+        # Response: [0x74, len_format_byte, max_block_len_hi, max_block_len_lo]
+        # len_format = 0x20 → 2 bytes for maxBlockLength
+        mbl = _FLASH_MAX_BLOCK_LEN
+        return bytes([0x74, 0x20, (mbl >> 8) & 0xFF, mbl & 0xFF])
+
+    # ── Service 0x35: RequestUpload ───────────────────────────────────────
+
+    def _svc_request_upload(self, req: bytes) -> bytes:
+        sid = 0x35
+        if len(req) < 4:
+            return self._nrc(sid, _NRC_INCORRECT_MSG_LEN)
+
+        addr_len_fmt = req[2]
+        addr_len = addr_len_fmt & 0x0F
+        size_len = (addr_len_fmt >> 4) & 0x0F
+        if addr_len == 0 or size_len == 0:
+            return self._nrc(sid, _NRC_REQUEST_OUT_OF_RANGE)
+        if len(req) < 3 + addr_len + size_len:
+            return self._nrc(sid, _NRC_INCORRECT_MSG_LEN)
+
+        address = int.from_bytes(req[3 : 3 + addr_len], "big")
+        size = int.from_bytes(req[3 + addr_len : 3 + addr_len + size_len], "big")
+
+        if address < _FLASH_BASE or address + size > _FLASH_BASE + _FLASH_SIZE:
+            return self._nrc(sid, _NRC_REQUEST_OUT_OF_RANGE)
+
+        self._xfer_mode = 0x35
+        self._xfer_address = address
+        self._xfer_size = size
+        self._xfer_offset = 0
+        self._xfer_expected_sn = 1
+
+        mbl = _FLASH_MAX_BLOCK_LEN
+        return bytes([0x75, 0x20, (mbl >> 8) & 0xFF, mbl & 0xFF])
+
+    # ── Service 0x36: TransferData ────────────────────────────────────────
+
+    def _svc_transfer_data(self, req: bytes) -> bytes:
+        sid = 0x36
+        if self._xfer_mode == 0:
+            return self._nrc(sid, _NRC_REQUEST_SEQUENCE_ERROR)
+        if len(req) < 2:
+            return self._nrc(sid, _NRC_INCORRECT_MSG_LEN)
+
+        block_sn = req[1]
+        if block_sn != (self._xfer_expected_sn & 0xFF):
+            return self._nrc(sid, _NRC_REQUEST_SEQUENCE_ERROR)
+
+        if self._xfer_mode == 0x34:  # download: tester sends data
+            data = req[2:]
+            flash_start = self._xfer_address - _FLASH_BASE + self._xfer_offset
+            remaining = self._xfer_size - self._xfer_offset
+            chunk = data[:remaining]
+            self._flash[flash_start : flash_start + len(chunk)] = chunk
+            self._xfer_offset += len(chunk)
+            self._xfer_expected_sn = (self._xfer_expected_sn + 1) & 0xFF
+            return bytes([0x76, block_sn])
+
+        # upload: ECU sends data
+        flash_start = self._xfer_address - _FLASH_BASE + self._xfer_offset
+        remaining = self._xfer_size - self._xfer_offset
+        chunk_size = min(_FLASH_BLOCK_SIZE, remaining)
+        chunk = bytes(self._flash[flash_start : flash_start + chunk_size])
+        self._xfer_offset += chunk_size
+        self._xfer_expected_sn = (self._xfer_expected_sn + 1) & 0xFF
+        return bytes([0x76, block_sn]) + chunk
+
+    # ── Service 0x37: RequestTransferExit ────────────────────────────────
+
+    def _svc_transfer_exit(self, req: bytes) -> bytes:  # noqa: ARG002
+        if self._xfer_mode == 0:
+            return self._nrc(0x37, _NRC_REQUEST_SEQUENCE_ERROR)
+        self._xfer_mode = 0
+        self._xfer_offset = 0
+        return bytes([0x77])

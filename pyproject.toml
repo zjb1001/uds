@@ -1,6 +1,6 @@
 [project]
 name = "uds-diagnostic-system"
-version = "0.1.0"
+version = "1.0.0"
 description = "UDS Diagnostic Simulation System tools and test framework"
 requires-python = ">=3.10"
 
