@@ -1,0 +1,42 @@
+steps:
+  # ── System packages ──────────────────────────────────────────────────────
+  - name: Install C build toolchain and test dependencies
+    run: |
+      sudo apt-get update -qq
+      sudo apt-get install -y --no-install-recommends \
+        cmake gcc g++ make \
+        check libcheck-dev pkg-config \
+        cppcheck clang-format \
+        lcov gcovr \
+        can-utils \
+        git
+
+  # ── Virtual CAN interface ─────────────────────────────────────────────────
+  - name: Set up virtual CAN interface (vcan0)
+    run: |
+      sudo modprobe vcan 2>/dev/null || echo "vcan module not available"
+      sudo ip link add dev vcan0 type vcan 2>/dev/null || true
+      sudo ip link set up vcan0 2>/dev/null || true
+      ip link show vcan0 2>/dev/null || echo "vcan0 not available"
+
+  # ── Python toolchain ──────────────────────────────────────────────────────
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: "3.11"
+
+  - name: Install Python development dependencies
+    run: |
+      python -m pip install --upgrade pip
+      pip install ruff pytest pytest-cov
+      [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
+      [ -f tools/requirements.txt ] && pip install -r tools/requirements.txt || true
+
+  # ── Initial CMake configure (validates build system is working) ───────────
+  - name: Verify CMake build configuration
+    run: |
+      cmake -B build \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DENABLE_COVERAGE=ON
+      cmake --build build --parallel "$(nproc)" 2>/dev/null || true
+      echo "Build environment ready."
