@@ -204,3 +204,89 @@ All 7 C test suites pass (0 failures):
 - `ecusim/` ECU simulator (to exercise full stack end-to-end)
 - Release preparation (v1.0.0 release notes, packaging)
 
+
+---
+
+## Session 3 — Phase 5: ECU Simulator + Integration Tests
+
+**Date:** 2026-04-26  
+**Branch:** `copilot/enhance-project-content`
+
+### Work Completed
+
+#### `src/ecusim/` — C ECU Simulator
+
+A standalone C executable that implements a full UDS server over SocketCAN:
+
+- **`ecusim.h`** — Public API: `EcuSimulator` struct, `ecusim_init()`, `ecusim_run()`,
+  `ecusim_stop()`, `ecusim_cleanup()`
+- **`ecusim.c`** — Complete UDS dispatch loop using all existing libraries
+  (`uds_can`, `uds_tp`, `uds_core`, `uds_bootloader`)
+- **`main.c`** — CLI entry point: `--interface`, `--ecu-id`, `--verbose`; SIGTERM/SIGINT
+  handling for graceful shutdown
+- **`CMakeLists.txt`** — Builds `ecusim` executable, installs to `${BINDIR}`
+
+**Supported services:** 0x10, 0x3E, 0x27, 0x22, 0x2E, 0x11, 0x28, 0x14, 0x19,
+0x34, 0x35, 0x36, 0x37
+
+**Default data:**
+- DIDs: F187 (ECU part number), F191 (HW version), F189 (SW version), F190 (VIN),
+  0101 (odometer)
+- DTCs: 0x010001 (battery voltage, confirmed), 0x010002 (comm timeout, pending)
+- Flash: 256 KB simulated region at address 0x00000000
+
+#### `tools/uds/ecusim.py` — Python ECU Simulator
+
+A Python class that simulates a UDS ECU server for integration testing without
+building or running a C binary:
+
+- `EcuSimulator` class: starts/stops as a background thread on any vCAN interface
+- Same services as C simulator: 0x10, 0x3E, 0x27, 0x22, 0x2E, 0x11, 0x14, 0x19
+- Helper: `_compute_key(seed)` — XOR key function (matches C implementation)
+- Exported from `tools/uds/__init__.py`
+
+#### `tests/integration/conftest.py` — Updated Fixtures
+
+Two new fixtures added:
+- **`running_ecusim`** — Starts a Python `EcuSimulator` for ECU 1 on vcan0, yields
+  it, then stops. Depends on `skip_if_no_vcan`.
+- **`uds_client_with_sim`** — Wraps `running_ecusim` with a connected `UdsClient`.
+  Complete: one fixture provides both the ECU and the client.
+
+#### `tests/integration/test_uds_services_integration.py` — Full Service Tests
+
+26 integration tests covering:
+
+| Class | Service | Tests |
+|-------|---------|-------|
+| `TestDiagnosticSessionControl` | 0x10 | 4 |
+| `TestTesterPresent` | 0x3E | 2 |
+| `TestSecurityAccess` | 0x27 | 4 |
+| `TestReadDataByIdentifier` | 0x22 | 4 |
+| `TestWriteDataByIdentifier` | 0x2E | 2 |
+| `TestEcuReset` | 0x11 | 3 |
+| `TestReadDTCInformation` | 0x19 | 3 |
+| `TestClearDTC` | 0x14 | 2 |
+| `TestUnknownService` | — | 1 |
+| `TestFullWorkflow` | multi-service | 2 |
+
+All tests are marked `@pytest.mark.integration` and are automatically skipped
+when `vcan0` is not available.
+
+### Status Update
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Phase 5: C ECU simulator | ✅ Done | `src/ecusim/` builds cleanly, all lint checks pass |
+| Phase 5: Python ECU simulator | ✅ Done | `tools/uds/ecusim.py`, thread-based |
+| Phase 5: Integration test suite | ✅ Done | 26 tests, vCAN-gated |
+| Phase 5: Performance benchmarking | 🔲 Pending | ≥ 10 KB/s flash throughput |
+| Phase 5: Release preparation | 🔲 Pending | v1.0.0 tag, CHANGELOG |
+
+### Phase Milestone Progress
+
+- **Phase 1 (M1):** ✅ Complete
+- **Phase 2 (M2):** ✅ Complete
+- **Phase 3 (M3):** ✅ Complete
+- **Phase 4 tools:** ✅ Complete
+- **Phase 5 simulator:** ✅ Complete (ECU simulator + integration tests)

@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "tools"))
 
 from uds import UdsClient
+from uds.ecusim import EcuSimulator
 from uds.transport import IsoTpTransport
 
 
@@ -59,3 +60,23 @@ def iso_tp_transport(skip_if_no_vcan: None) -> IsoTpTransport:  # noqa: ARG001
     transport.open()
     yield transport
     transport.close()
+
+
+@pytest.fixture
+def running_ecusim(skip_if_no_vcan: None) -> EcuSimulator:  # noqa: ARG001
+    """Start a Python EcuSimulator for ECU 1 on vcan0, yield it, then stop."""
+    sim = EcuSimulator("vcan0", ecu_id=1)
+    sim.start()
+    yield sim
+    sim.stop()
+
+
+@pytest.fixture
+def uds_client_with_sim(
+    running_ecusim: EcuSimulator,  # noqa: ARG001
+) -> UdsClient:
+    """Provide a UdsClient with a live EcuSimulator already running."""
+    client = UdsClient("vcan0", ecu_id=1, timeout=2.0)
+    client.open()
+    yield client
+    client.close()
