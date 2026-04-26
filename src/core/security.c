@@ -32,8 +32,7 @@
 
 /* ── XOR key mask (big-endian bytes of 0xABCD1234) ─────────────────────── */
 
-static const uint8_t KEY_MASK[UDS_CORE_SEED_LEN] = {0xABU, 0xCDU, 0x12U,
-                                                      0x34U};
+static const uint8_t KEY_MASK[UDS_CORE_SEED_LEN] = {0xABU, 0xCDU, 0x12U, 0x34U};
 
 /* ── Internal helpers ───────────────────────────────────────────────────── */
 
@@ -85,7 +84,7 @@ void uds_core_security_init(UdsCoreSecurity *sec) {
 }
 
 void uds_core_sec_compute_key(const uint8_t *seed, size_t seed_len,
-                               uint8_t *key_out) {
+                              uint8_t *key_out) {
   if (!seed || !key_out || seed_len == 0U) {
     return;
   }
@@ -97,8 +96,8 @@ void uds_core_sec_compute_key(const uint8_t *seed, size_t seed_len,
 /* ── Service 0x27 requestSeed (odd sub-function) ───────────────────────── */
 
 int uds_core_sec_request_seed(UdsCoreSecurity *sec, uint8_t sub_fn,
-                               uint8_t *resp, size_t resp_size,
-                               size_t *resp_len, uint8_t *nrc_out) {
+                              uint8_t *resp, size_t resp_size, size_t *resp_len,
+                              uint8_t *nrc_out) {
   if (!sec || !resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }
@@ -148,8 +147,8 @@ int uds_core_sec_request_seed(UdsCoreSecurity *sec, uint8_t sub_fn,
 /* ── Service 0x27 sendKey (even sub-function) ───────────────────────────── */
 
 int uds_core_sec_send_key(UdsCoreSecurity *sec, uint8_t sub_fn,
-                          const uint8_t *key, size_t key_len,
-                          uint8_t *resp, size_t resp_size, size_t *resp_len,
+                          const uint8_t *key, size_t key_len, uint8_t *resp,
+                          size_t resp_size, size_t *resp_len,
                           uint8_t *nrc_out) {
   if (!sec || !key || !resp || !resp_len || !nrc_out || key_len == 0U) {
     return UDS_CORE_ERR_PARAM;
@@ -194,7 +193,8 @@ int uds_core_sec_send_key(UdsCoreSecurity *sec, uint8_t sub_fn,
     return UDS_CORE_ERR_NRC;
   }
 
-  /* Compute expected key and compare (constant-time to resist timing attacks) */
+  /* Compute expected key and compare (constant-time to resist timing attacks)
+   */
   uint8_t expected_key[UDS_CORE_SEED_LEN];
   uds_core_sec_compute_key(sec->seed, UDS_CORE_SEED_LEN, expected_key);
 
@@ -220,7 +220,8 @@ int uds_core_sec_send_key(UdsCoreSecurity *sec, uint8_t sub_fn,
   /* Key is correct — unlock this security level */
   sec->seed_valid = false;
   sec->fail_count = 0U;
-  sec->unlocked_level = expected_seed_level; /* store the odd requestSeed level */
+  sec->unlocked_level =
+      expected_seed_level; /* store the odd requestSeed level */
 
   resp[0] = 0x67U;
   resp[1] = sub_fn;

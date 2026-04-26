@@ -40,7 +40,7 @@ extern "C" {
 #define UDS_FLASH_MAX_REGIONS 8U
 
 /** Total simulated flash size in bytes (256 KB). */
-#define UDS_FLASH_MAX_SIZE    (256U * 1024U)
+#define UDS_FLASH_MAX_SIZE (256U * 1024U)
 
 /** Byte value representing an erased flash cell. */
 #define UDS_FLASH_ERASE_VALUE 0xFFU
@@ -49,9 +49,9 @@ extern "C" {
  * @brief Descriptor for one contiguous flash memory region.
  */
 typedef struct {
-    uint32_t base_address; /**< Region start address. */
-    uint32_t size;         /**< Region size in bytes. */
-    bool     protected;    /**< True if the region is write-protected. */
+  uint32_t base_address; /**< Region start address. */
+  uint32_t size;         /**< Region size in bytes. */
+  bool protected;        /**< True if the region is write-protected. */
 } UdsFlashRegion;
 
 /**
@@ -61,10 +61,10 @@ typedef struct {
  * All fields are public to allow direct inspection in tests.
  */
 typedef struct {
-    uint8_t        data[UDS_FLASH_MAX_SIZE]; /**< Simulated flash content. */
-    UdsFlashRegion regions[UDS_FLASH_MAX_REGIONS]; /**< Region table. */
-    size_t         region_count;             /**< Number of defined regions. */
-    bool           initialized;              /**< True after uds_flash_init(). */
+  uint8_t data[UDS_FLASH_MAX_SIZE]; /**< Simulated flash content. */
+  UdsFlashRegion regions[UDS_FLASH_MAX_REGIONS]; /**< Region table. */
+  size_t region_count; /**< Number of defined regions. */
+  bool initialized;    /**< True after uds_flash_init(). */
 } UdsFlashMemory;
 
 /* ── Flash operations ───────────────────────────────────────────────────── */
@@ -76,7 +76,8 @@ typedef struct {
  * region table.
  *
  * @param[out] flash        Flash memory to initialise.
- * @param[in]  regions      Array of region descriptors (may be NULL if count=0).
+ * @param[in]  regions      Array of region descriptors (may be NULL if
+ * count=0).
  * @param[in]  region_count Number of entries in @p regions
  *                          (clamped to UDS_FLASH_MAX_REGIONS).
  */
@@ -126,8 +127,8 @@ int uds_flash_write(UdsFlashMemory *flash, uint32_t address,
  * @return UDS_CORE_OK on success, UDS_CORE_ERR_PARAM on NULL pointers or
  *         len=0, UDS_CORE_ERR_NRC if the range is invalid.
  */
-int uds_flash_read(const UdsFlashMemory *flash, uint32_t address,
-                   uint8_t *buf, size_t len);
+int uds_flash_read(const UdsFlashMemory *flash, uint32_t address, uint8_t *buf,
+                   size_t len);
 
 /**
  * @brief Check whether an address range falls within any defined region.
@@ -139,7 +140,7 @@ int uds_flash_read(const UdsFlashMemory *flash, uint32_t address,
  *         false otherwise (including NULL flash or zero length).
  */
 bool uds_flash_address_valid(const UdsFlashMemory *flash, uint32_t address,
-                              uint32_t length);
+                             uint32_t length);
 
 /* ── Transfer session state ─────────────────────────────────────────────── */
 
@@ -147,9 +148,9 @@ bool uds_flash_address_valid(const UdsFlashMemory *flash, uint32_t address,
  * @brief Active transfer direction for services 0x34/0x35/0x36/0x37.
  */
 typedef enum {
-    UDS_XFER_IDLE     = 0, /**< No transfer in progress. */
-    UDS_XFER_DOWNLOAD = 1, /**< 0x34 accepted; expecting 0x36 writes. */
-    UDS_XFER_UPLOAD   = 2, /**< 0x35 accepted; serving 0x36 reads. */
+  UDS_XFER_IDLE = 0,     /**< No transfer in progress. */
+  UDS_XFER_DOWNLOAD = 1, /**< 0x34 accepted; expecting 0x36 writes. */
+  UDS_XFER_UPLOAD = 2,   /**< 0x35 accepted; serving 0x36 reads. */
 } UdsXferMode;
 
 /**
@@ -158,14 +159,14 @@ typedef enum {
  * Initialise with uds_xfer_init() before use.
  */
 typedef struct {
-    UdsXferMode mode;           /**< Current transfer direction. */
-    uint32_t    address;        /**< Target start address in flash. */
-    uint32_t    total_length;   /**< Total bytes to transfer. */
-    uint32_t    transferred;    /**< Bytes successfully transferred so far. */
-    uint8_t     block_seq;      /**< Expected next block sequence counter
-                                     (1–255, wraps 0xFF → 0x01). */
-    uint16_t    max_block_size; /**< Negotiated max data bytes per block
-                                     (excluding the SID + seq header). */
+  UdsXferMode mode;        /**< Current transfer direction. */
+  uint32_t address;        /**< Target start address in flash. */
+  uint32_t total_length;   /**< Total bytes to transfer. */
+  uint32_t transferred;    /**< Bytes successfully transferred so far. */
+  uint8_t block_seq;       /**< Expected next block sequence counter
+                                (1–255, wraps 0xFF → 0x01). */
+  uint16_t max_block_size; /**< Negotiated max data bytes per block
+                                (excluding the SID + seq header). */
 } UdsXferSession;
 
 /* ── UDS flash service API ──────────────────────────────────────────────── */
@@ -193,15 +194,16 @@ void uds_xfer_init(UdsXferSession *xfer);
  * @param[out]    resp              Buffer for positive response bytes.
  * @param[in]     resp_size         Capacity of @p resp (must be ≥ 4).
  * @param[out]    resp_len          Number of bytes written on success.
- * @param[out]    nrc_out           NRC byte set when return == UDS_CORE_ERR_NRC.
+ * @param[out]    nrc_out           NRC byte set when return ==
+ * UDS_CORE_ERR_NRC.
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
 int uds_svc_request_download(UdsXferSession *xfer, UdsFlashMemory *flash,
-                              uint8_t address_and_len_fmt,
-                              const uint8_t *addr_and_len_data, size_t data_len,
-                              uint8_t *resp, size_t resp_size, size_t *resp_len,
-                              uint8_t *nrc_out);
+                             uint8_t address_and_len_fmt,
+                             const uint8_t *addr_and_len_data, size_t data_len,
+                             uint8_t *resp, size_t resp_size, size_t *resp_len,
+                             uint8_t *nrc_out);
 
 /**
  * @brief Process a Service 0x35 (Request Upload) request.
@@ -217,15 +219,16 @@ int uds_svc_request_download(UdsXferSession *xfer, UdsFlashMemory *flash,
  * @param[out]    resp              Buffer for positive response bytes.
  * @param[in]     resp_size         Capacity of @p resp (must be ≥ 4).
  * @param[out]    resp_len          Number of bytes written on success.
- * @param[out]    nrc_out           NRC byte set when return == UDS_CORE_ERR_NRC.
+ * @param[out]    nrc_out           NRC byte set when return ==
+ * UDS_CORE_ERR_NRC.
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
 int uds_svc_request_upload(UdsXferSession *xfer, const UdsFlashMemory *flash,
-                            uint8_t address_and_len_fmt,
-                            const uint8_t *addr_and_len_data, size_t data_len,
-                            uint8_t *resp, size_t resp_size, size_t *resp_len,
-                            uint8_t *nrc_out);
+                           uint8_t address_and_len_fmt,
+                           const uint8_t *addr_and_len_data, size_t data_len,
+                           uint8_t *resp, size_t resp_size, size_t *resp_len,
+                           uint8_t *nrc_out);
 
 /**
  * @brief Process a Service 0x36 (Transfer Data) request.
@@ -247,10 +250,9 @@ int uds_svc_request_upload(UdsXferSession *xfer, const UdsFlashMemory *flash,
  *         UDS_CORE_ERR_BUF.
  */
 int uds_svc_transfer_data(UdsXferSession *xfer, UdsFlashMemory *flash,
-                           uint8_t block_seq_counter,
-                           const uint8_t *data, size_t data_len,
-                           uint8_t *resp, size_t resp_size, size_t *resp_len,
-                           uint8_t *nrc_out);
+                          uint8_t block_seq_counter, const uint8_t *data,
+                          size_t data_len, uint8_t *resp, size_t resp_size,
+                          size_t *resp_len, uint8_t *nrc_out);
 
 /**
  * @brief Process a Service 0x37 (Request Transfer Exit) request.
@@ -265,9 +267,8 @@ int uds_svc_transfer_data(UdsXferSession *xfer, UdsFlashMemory *flash,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_transfer_exit(UdsXferSession *xfer,
-                           uint8_t *resp, size_t resp_size, size_t *resp_len,
-                           uint8_t *nrc_out);
+int uds_svc_transfer_exit(UdsXferSession *xfer, uint8_t *resp, size_t resp_size,
+                          size_t *resp_len, uint8_t *nrc_out);
 
 #ifdef __cplusplus
 }

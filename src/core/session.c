@@ -25,7 +25,7 @@
  * Returns (a - b) in ms; safe for monotonic clock (a >= b always).
  */
 static long timespec_diff_ms(const struct timespec *a,
-                              const struct timespec *b) {
+                             const struct timespec *b) {
   long sec_diff = (long)(a->tv_sec - b->tv_sec);
   long nsec_diff = (long)(a->tv_nsec - b->tv_nsec);
   return sec_diff * 1000L + nsec_diff / 1000000L;
@@ -57,9 +57,8 @@ void uds_core_session_init(UdsCoreSession *sess, uint8_t ecu_id,
 
 /* ── Service 0x10: Diagnostic Session Control ───────────────────────────── */
 
-int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type,
-                 uint8_t *resp, size_t resp_size, size_t *resp_len,
-                 uint8_t *nrc_out) {
+int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type, uint8_t *resp,
+                 size_t resp_size, size_t *resp_len, uint8_t *nrc_out) {
   if (!sess || !resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }
@@ -76,7 +75,8 @@ int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type,
     return UDS_CORE_ERR_NRC;
   }
 
-  /* Positive response: [0x50, sessionType, P2_hi, P2_lo, P2star_hi, P2star_lo] */
+  /* Positive response: [0x50, sessionType, P2_hi, P2_lo, P2star_hi, P2star_lo]
+   */
   if (resp_size < 6U) {
     return UDS_CORE_ERR_BUF;
   }
@@ -105,9 +105,9 @@ int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type,
 
 /* ── Service 0x3E: Tester Present ──────────────────────────────────────── */
 
-int uds_core_tester_present(UdsCoreSession *sess, uint8_t sub_fn,
-                             uint8_t *resp, size_t resp_size, size_t *resp_len,
-                             uint8_t *nrc_out) {
+int uds_core_tester_present(UdsCoreSession *sess, uint8_t sub_fn, uint8_t *resp,
+                            size_t resp_size, size_t *resp_len,
+                            uint8_t *nrc_out) {
   if (!sess || !resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }
