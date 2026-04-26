@@ -12,3 +12,6 @@ add_subdirectory(core)
 
 # UDS bootloader and flash programming services (Phase 3 — 0x34/0x35/0x36/0x37)
 add_subdirectory(bootloader)
+
+# ECU simulator executable (Phase 5 — full-stack end-to-end testing)
+add_subdirectory(ecusim)

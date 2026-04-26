@@ -5,6 +5,7 @@ from __future__ import annotations
 from .client import UdsClient
 from .data import UdsDidService
 from .dtc import UdsDtcService
+from .ecusim import EcuSimulator
 from .exceptions import UdsError, UdsNrcError, UdsProtocolError, UdsTimeoutError
 from .flash import UdsFlashService
 from .nrc import UdsNrc
@@ -20,6 +21,7 @@ __all__ = [
     "UdsDidService",
     "UdsDtcService",
     "UdsFlashService",
+    "EcuSimulator",
     "UdsError",
     "UdsNrcError",
     "UdsTimeoutError",
