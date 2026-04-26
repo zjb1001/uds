@@ -19,7 +19,7 @@
 /* ── Routine registry ───────────────────────────────────────────────────── */
 
 void uds_routine_registry_init(UdsRoutineRegistry *reg,
-                                UdsRoutineEntry *entries, size_t count) {
+                               UdsRoutineEntry *entries, size_t count) {
   if (!reg) {
     return;
   }
@@ -42,11 +42,10 @@ static UdsRoutineEntry *routine_find(UdsRoutineRegistry *reg,
 /* ── Service 0x31: RoutineControl ───────────────────────────────────────── */
 
 int uds_svc_routine_control(UdsRoutineRegistry *reg, uint8_t sub_fn,
-                             uint16_t routine_id, uint8_t session_type,
-                             bool security_unlocked,
-                             const uint8_t *option_data, size_t option_len,
-                             uint8_t *resp, size_t resp_size, size_t *resp_len,
-                             uint8_t *nrc_out) {
+                            uint16_t routine_id, uint8_t session_type,
+                            bool security_unlocked, const uint8_t *option_data,
+                            size_t option_len, uint8_t *resp, size_t resp_size,
+                            size_t *resp_len, uint8_t *nrc_out) {
   (void)option_data;
   (void)option_len;
 

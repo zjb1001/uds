@@ -34,9 +34,9 @@ extern "C" {
  * @brief Operational state of a routine.
  */
 typedef enum {
-  UDS_ROUTINE_IDLE             = 0, /**< Not yet started. */
-  UDS_ROUTINE_RUNNING          = 1, /**< Currently executing. */
-  UDS_ROUTINE_STOPPED          = 2, /**< Explicitly stopped. */
+  UDS_ROUTINE_IDLE = 0,             /**< Not yet started. */
+  UDS_ROUTINE_RUNNING = 1,          /**< Currently executing. */
+  UDS_ROUTINE_STOPPED = 2,          /**< Explicitly stopped. */
   UDS_ROUTINE_RESULT_AVAILABLE = 3, /**< Finished; results ready. */
 } UdsRoutineState;
 
@@ -46,13 +46,13 @@ typedef enum {
  * @brief Entry describing a single routine.
  */
 typedef struct {
-  uint16_t        routine_id;       /**< 2-byte routine identifier. */
-  UdsRoutineState state;            /**< Current execution state. */
-  uint8_t         result_data[16];  /**< Result bytes (valid when
-                                         state == RESULT_AVAILABLE). */
-  size_t          result_len;       /**< Number of valid bytes in result_data. */
-  uint8_t         min_session;      /**< Minimum session type to execute. */
-  bool            requires_security;/**< True if security access required. */
+  uint16_t routine_id;     /**< 2-byte routine identifier. */
+  UdsRoutineState state;   /**< Current execution state. */
+  uint8_t result_data[16]; /**< Result bytes (valid when
+                                state == RESULT_AVAILABLE). */
+  size_t result_len;       /**< Number of valid bytes in result_data. */
+  uint8_t min_session;     /**< Minimum session type to execute. */
+  bool requires_security;  /**< True if security access required. */
 } UdsRoutineEntry;
 
 /**
@@ -62,7 +62,7 @@ typedef struct {
  */
 typedef struct {
   UdsRoutineEntry *entries; /**< Pointer to array of routine entries. */
-  size_t           count;   /**< Number of entries in the array. */
+  size_t count;             /**< Number of entries in the array. */
 } UdsRoutineRegistry;
 
 /**
@@ -73,7 +73,7 @@ typedef struct {
  * @param[in]  count   Number of entries.
  */
 void uds_routine_registry_init(UdsRoutineRegistry *reg,
-                                UdsRoutineEntry *entries, size_t count);
+                               UdsRoutineEntry *entries, size_t count);
 
 /* ── Service 0x31: RoutineControl ───────────────────────────────────────── */
 
@@ -117,11 +117,10 @@ void uds_routine_registry_init(UdsRoutineRegistry *reg,
  *         UDS_CORE_ERR_BUF.
  */
 int uds_svc_routine_control(UdsRoutineRegistry *reg, uint8_t sub_fn,
-                             uint16_t routine_id, uint8_t session_type,
-                             bool security_unlocked,
-                             const uint8_t *option_data, size_t option_len,
-                             uint8_t *resp, size_t resp_size, size_t *resp_len,
-                             uint8_t *nrc_out);
+                            uint16_t routine_id, uint8_t session_type,
+                            bool security_unlocked, const uint8_t *option_data,
+                            size_t option_len, uint8_t *resp, size_t resp_size,
+                            size_t *resp_len, uint8_t *nrc_out);
 
 #ifdef __cplusplus
 }

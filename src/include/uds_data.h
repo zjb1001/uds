@@ -37,14 +37,14 @@ extern "C" {
  * The @p data pointer must remain valid for the lifetime of the registry.
  */
 typedef struct {
-  uint16_t did_id;            /**< 2-byte DID value (e.g. 0xF190). */
-  uint8_t *data;              /**< Pointer to the DID data buffer. */
-  size_t   data_len;          /**< Length of @p data in bytes. */
-  bool     writable;          /**< True if the DID may be written (0x2E). */
-  uint8_t  min_session;       /**< Minimum session type to read (0x01 = any). */
-  uint8_t  min_write_session; /**< Minimum session type to write. */
-  bool     requires_security; /**< True if a security unlock is required
-                                    to write this DID. */
+  uint16_t did_id;           /**< 2-byte DID value (e.g. 0xF190). */
+  uint8_t *data;             /**< Pointer to the DID data buffer. */
+  size_t data_len;           /**< Length of @p data in bytes. */
+  bool writable;             /**< True if the DID may be written (0x2E). */
+  uint8_t min_session;       /**< Minimum session type to read (0x01 = any). */
+  uint8_t min_write_session; /**< Minimum session type to write. */
+  bool requires_security;    /**< True if a security unlock is required
+                                   to write this DID. */
 } UdsDidEntry;
 
 /**
@@ -54,7 +54,7 @@ typedef struct {
  */
 typedef struct {
   UdsDidEntry *entries; /**< Pointer to array of DID entries. */
-  size_t       count;   /**< Number of entries in the array. */
+  size_t count;         /**< Number of entries in the array. */
 } UdsDidRegistry;
 
 /**
@@ -65,7 +65,7 @@ typedef struct {
  * @param[in]  count   Number of entries.
  */
 void uds_did_registry_init(UdsDidRegistry *reg, UdsDidEntry *entries,
-                            size_t count);
+                           size_t count);
 
 /* ── Service 0x22: ReadDataByIdentifier ─────────────────────────────────── */
 
@@ -123,11 +123,10 @@ int uds_svc_read_did(const UdsDidRegistry *reg, const uint16_t *did_list,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_write_did(UdsDidRegistry *reg, uint16_t did_id,
-                      const uint8_t *data, size_t data_len,
-                      uint8_t session_type, bool security_unlocked,
-                      uint8_t *resp, size_t resp_size, size_t *resp_len,
-                      uint8_t *nrc_out);
+int uds_svc_write_did(UdsDidRegistry *reg, uint16_t did_id, const uint8_t *data,
+                      size_t data_len, uint8_t session_type,
+                      bool security_unlocked, uint8_t *resp, size_t resp_size,
+                      size_t *resp_len, uint8_t *nrc_out);
 
 /* ── Service 0x11: ECUReset ─────────────────────────────────────────────── */
 
@@ -179,9 +178,8 @@ int uds_svc_ecu_reset(uint8_t reset_type, uint8_t *resp, size_t resp_size,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_comm_control(uint8_t control_type, uint8_t comm_type,
-                          uint8_t *resp, size_t resp_size, size_t *resp_len,
-                          uint8_t *nrc_out);
+int uds_svc_comm_control(uint8_t control_type, uint8_t comm_type, uint8_t *resp,
+                         size_t resp_size, size_t *resp_len, uint8_t *nrc_out);
 
 #ifdef __cplusplus
 }

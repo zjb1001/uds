@@ -19,7 +19,7 @@
 /* ── DTC registry ───────────────────────────────────────────────────────── */
 
 void uds_dtc_registry_init(UdsDtcRegistry *reg, UdsDtcEntry *entries,
-                            size_t count) {
+                           size_t count) {
   if (!reg) {
     return;
   }
@@ -29,9 +29,8 @@ void uds_dtc_registry_init(UdsDtcRegistry *reg, UdsDtcEntry *entries,
 
 /* ── Service 0x14: ClearDiagnosticInformation ───────────────────────────── */
 
-int uds_svc_clear_dtc(UdsDtcRegistry *reg, uint32_t group_of_dtc,
-                       uint8_t *resp, size_t resp_size, size_t *resp_len,
-                       uint8_t *nrc_out) {
+int uds_svc_clear_dtc(UdsDtcRegistry *reg, uint32_t group_of_dtc, uint8_t *resp,
+                      size_t resp_size, size_t *resp_len, uint8_t *nrc_out) {
   if (!reg || !resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }
@@ -89,8 +88,8 @@ int uds_svc_read_dtc(const UdsDtcRegistry *reg, uint8_t sub_fn,
       return UDS_CORE_ERR_BUF;
     }
 
-    uint8_t status_mask = (req_data && req_data_len >= 1U) ? req_data[0]
-                                                            : 0xFFU;
+    uint8_t status_mask =
+        (req_data && req_data_len >= 1U) ? req_data[0] : 0xFFU;
     uint16_t count = 0U;
     for (size_t i = 0U; i < reg->count; i++) {
       if ((reg->entries[i].status & status_mask) != 0U) {
@@ -115,8 +114,8 @@ int uds_svc_read_dtc(const UdsDtcRegistry *reg, uint8_t sub_fn,
       return UDS_CORE_ERR_BUF;
     }
 
-    uint8_t status_mask = (req_data && req_data_len >= 1U) ? req_data[0]
-                                                            : 0xFFU;
+    uint8_t status_mask =
+        (req_data && req_data_len >= 1U) ? req_data[0] : 0xFFU;
     resp[pos++] = 0x59U;
     resp[pos++] = 0x02U;
     resp[pos++] = status_mask;
@@ -131,8 +130,8 @@ int uds_svc_read_dtc(const UdsDtcRegistry *reg, uint8_t sub_fn,
         return UDS_CORE_ERR_BUF;
       }
       resp[pos++] = (uint8_t)((e->dtc_code >> 16) & 0xFFU);
-      resp[pos++] = (uint8_t)((e->dtc_code >>  8) & 0xFFU);
-      resp[pos++] = (uint8_t)( e->dtc_code        & 0xFFU);
+      resp[pos++] = (uint8_t)((e->dtc_code >> 8) & 0xFFU);
+      resp[pos++] = (uint8_t)(e->dtc_code & 0xFFU);
       resp[pos++] = e->status;
     }
 
@@ -158,8 +157,8 @@ int uds_svc_read_dtc(const UdsDtcRegistry *reg, uint8_t sub_fn,
         return UDS_CORE_ERR_BUF;
       }
       resp[pos++] = (uint8_t)((e->dtc_code >> 16) & 0xFFU);
-      resp[pos++] = (uint8_t)((e->dtc_code >>  8) & 0xFFU);
-      resp[pos++] = (uint8_t)( e->dtc_code        & 0xFFU);
+      resp[pos++] = (uint8_t)((e->dtc_code >> 8) & 0xFFU);
+      resp[pos++] = (uint8_t)(e->dtc_code & 0xFFU);
       resp[pos++] = e->status;
     }
 

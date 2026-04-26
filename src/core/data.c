@@ -19,7 +19,7 @@
 /* ── DID registry ───────────────────────────────────────────────────────── */
 
 void uds_did_registry_init(UdsDidRegistry *reg, UdsDidEntry *entries,
-                            size_t count) {
+                           size_t count) {
   if (!reg) {
     return;
   }
@@ -95,11 +95,10 @@ int uds_svc_read_did(const UdsDidRegistry *reg, const uint16_t *did_list,
 
 /* ── Service 0x2E: WriteDataByIdentifier ────────────────────────────────── */
 
-int uds_svc_write_did(UdsDidRegistry *reg, uint16_t did_id,
-                      const uint8_t *data, size_t data_len,
-                      uint8_t session_type, bool security_unlocked,
-                      uint8_t *resp, size_t resp_size, size_t *resp_len,
-                      uint8_t *nrc_out) {
+int uds_svc_write_did(UdsDidRegistry *reg, uint16_t did_id, const uint8_t *data,
+                      size_t data_len, uint8_t session_type,
+                      bool security_unlocked, uint8_t *resp, size_t resp_size,
+                      size_t *resp_len, uint8_t *nrc_out) {
   if (!reg || !data || !resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }
@@ -176,9 +175,8 @@ int uds_svc_ecu_reset(uint8_t reset_type, uint8_t *resp, size_t resp_size,
 
 /* ── Service 0x28: CommunicationControl ─────────────────────────────────── */
 
-int uds_svc_comm_control(uint8_t control_type, uint8_t comm_type,
-                          uint8_t *resp, size_t resp_size, size_t *resp_len,
-                          uint8_t *nrc_out) {
+int uds_svc_comm_control(uint8_t control_type, uint8_t comm_type, uint8_t *resp,
+                         size_t resp_size, size_t *resp_len, uint8_t *nrc_out) {
   if (!resp || !resp_len || !nrc_out) {
     return UDS_CORE_ERR_PARAM;
   }

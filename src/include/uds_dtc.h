@@ -29,21 +29,21 @@ extern "C" {
 /* ── DTC status byte bit definitions ────────────────────────────────────── */
 
 /** Bit 0: test failed in current operation cycle. */
-#define UDS_DTC_STATUS_TEST_FAILED              0x01U
+#define UDS_DTC_STATUS_TEST_FAILED 0x01U
 /** Bit 1: test failed this operation cycle. */
-#define UDS_DTC_STATUS_TEST_FAILED_THIS_CYCLE   0x02U
+#define UDS_DTC_STATUS_TEST_FAILED_THIS_CYCLE 0x02U
 /** Bit 2: pending DTC. */
-#define UDS_DTC_STATUS_PENDING_DTC              0x04U
+#define UDS_DTC_STATUS_PENDING_DTC 0x04U
 /** Bit 3: confirmed DTC. */
-#define UDS_DTC_STATUS_CONFIRMED_DTC            0x08U
+#define UDS_DTC_STATUS_CONFIRMED_DTC 0x08U
 /** Bit 4: test not completed since last clear. */
 #define UDS_DTC_STATUS_TEST_NOT_COMPLETED_SINCE_CLEAR 0x10U
 /** Bit 5: test failed since last clear. */
-#define UDS_DTC_STATUS_TEST_FAILED_SINCE_CLEAR  0x20U
+#define UDS_DTC_STATUS_TEST_FAILED_SINCE_CLEAR 0x20U
 /** Bit 6: test not completed this operation cycle. */
 #define UDS_DTC_STATUS_TEST_NOT_COMPLETED_THIS_CYCLE 0x40U
 /** Bit 7: warning indicator requested. */
-#define UDS_DTC_STATUS_WARNING_INDICATOR        0x80U
+#define UDS_DTC_STATUS_WARNING_INDICATOR 0x80U
 
 /* ── DTC registry ───────────────────────────────────────────────────────── */
 
@@ -56,10 +56,10 @@ extern "C" {
  *   byte3 =  dtc_code        & 0xFF
  */
 typedef struct {
-  uint32_t dtc_code;            /**< 24-bit DTC code (bits 23..0 used). */
-  uint8_t  status;              /**< Current DTC status byte. */
-  uint8_t  snapshot_data[16];   /**< Freeze-frame / snapshot bytes. */
-  size_t   snapshot_len;        /**< Number of valid bytes in snapshot_data. */
+  uint32_t dtc_code;         /**< 24-bit DTC code (bits 23..0 used). */
+  uint8_t status;            /**< Current DTC status byte. */
+  uint8_t snapshot_data[16]; /**< Freeze-frame / snapshot bytes. */
+  size_t snapshot_len;       /**< Number of valid bytes in snapshot_data. */
 } UdsDtcEntry;
 
 /**
@@ -69,7 +69,7 @@ typedef struct {
  */
 typedef struct {
   UdsDtcEntry *entries; /**< Pointer to array of DTC entries. */
-  size_t       count;   /**< Number of entries in the array. */
+  size_t count;         /**< Number of entries in the array. */
 } UdsDtcRegistry;
 
 /**
@@ -80,7 +80,7 @@ typedef struct {
  * @param[in]  count   Number of entries.
  */
 void uds_dtc_registry_init(UdsDtcRegistry *reg, UdsDtcEntry *entries,
-                            size_t count);
+                           size_t count);
 
 /* ── Service 0x14: ClearDiagnosticInformation ───────────────────────────── */
 
@@ -106,9 +106,8 @@ void uds_dtc_registry_init(UdsDtcRegistry *reg, UdsDtcEntry *entries,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_clear_dtc(UdsDtcRegistry *reg, uint32_t group_of_dtc,
-                       uint8_t *resp, size_t resp_size, size_t *resp_len,
-                       uint8_t *nrc_out);
+int uds_svc_clear_dtc(UdsDtcRegistry *reg, uint32_t group_of_dtc, uint8_t *resp,
+                      size_t resp_size, size_t *resp_len, uint8_t *nrc_out);
 
 /* ── Service 0x19: ReadDTCInformation ───────────────────────────────────── */
 

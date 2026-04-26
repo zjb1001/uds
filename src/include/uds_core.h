@@ -45,10 +45,10 @@ extern "C" {
  * Zero indicates success; negative values indicate errors.
  */
 typedef enum {
-  UDS_CORE_OK = 0,        /**< Success; response bytes written to caller buf. */
+  UDS_CORE_OK = 0, /**< Success; response bytes written to caller buf. */
   UDS_CORE_ERR_PARAM = -1, /**< Invalid parameter (NULL pointer, bad range). */
-  UDS_CORE_ERR_NRC = -2,  /**< UDS NRC condition; *nrc_out holds the NRC byte. */
-  UDS_CORE_ERR_BUF = -3,  /**< Response buffer too small. */
+  UDS_CORE_ERR_NRC = -2, /**< UDS NRC condition; *nrc_out holds the NRC byte. */
+  UDS_CORE_ERR_BUF = -3, /**< Response buffer too small. */
 } UdsCoreError;
 
 /* ── Session layer ──────────────────────────────────────────────────────── */
@@ -57,10 +57,10 @@ typedef enum {
  * @brief UDS diagnostic session types (Service 0x10 sub-function).
  */
 typedef enum {
-  UDS_SESSION_DEFAULT      = 0x01, /**< defaultSession */
-  UDS_SESSION_PROGRAMMING  = 0x02, /**< programmingSession */
-  UDS_SESSION_EXTENDED     = 0x03, /**< extendedDiagnosticSession */
-  UDS_SESSION_SAFETY       = 0x04, /**< safetySystemDiagnosticSession */
+  UDS_SESSION_DEFAULT = 0x01,     /**< defaultSession */
+  UDS_SESSION_PROGRAMMING = 0x02, /**< programmingSession */
+  UDS_SESSION_EXTENDED = 0x03,    /**< extendedDiagnosticSession */
+  UDS_SESSION_SAFETY = 0x04,      /**< safetySystemDiagnosticSession */
 } UdsSessionType;
 
 /**
@@ -75,7 +75,7 @@ typedef struct {
 } UdsCoreSessionConfig;
 
 /** Default session config convenience initialiser. */
-#define UDS_CORE_SESSION_DEFAULT_CONFIG                                         \
+#define UDS_CORE_SESSION_DEFAULT_CONFIG                                        \
   { .p2_ms = 50U, .p2_star_ms = 2000U, .s3_ms = 10000U }
 
 /**
@@ -85,11 +85,11 @@ typedef struct {
  * All fields are public to allow direct inspection in tests.
  */
 typedef struct {
-  uint8_t           ecu_id;          /**< ECU identifier. */
-  UdsSessionType    type;            /**< Current session type. */
-  UdsCoreSessionConfig cfg;          /**< Timing configuration. */
-  uint8_t           security_level;  /**< Unlocked security level (0 = none). */
-  struct timespec   last_activity;   /**< Monotonic timestamp of last activity. */
+  uint8_t ecu_id;                /**< ECU identifier. */
+  UdsSessionType type;           /**< Current session type. */
+  UdsCoreSessionConfig cfg;      /**< Timing configuration. */
+  uint8_t security_level;        /**< Unlocked security level (0 = none). */
+  struct timespec last_activity; /**< Monotonic timestamp of last activity. */
 } UdsCoreSession;
 
 /**
@@ -117,9 +117,8 @@ void uds_core_session_init(UdsCoreSession *sess, uint8_t ecu_id,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type,
-                 uint8_t *resp, size_t resp_size, size_t *resp_len,
-                 uint8_t *nrc_out);
+int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type, uint8_t *resp,
+                 size_t resp_size, size_t *resp_len, uint8_t *nrc_out);
 
 /**
  * @brief Process a Service 0x3E (Tester Present) request.
@@ -137,9 +136,9 @@ int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_core_tester_present(UdsCoreSession *sess, uint8_t sub_fn,
-                             uint8_t *resp, size_t resp_size, size_t *resp_len,
-                             uint8_t *nrc_out);
+int uds_core_tester_present(UdsCoreSession *sess, uint8_t sub_fn, uint8_t *resp,
+                            size_t resp_size, size_t *resp_len,
+                            uint8_t *nrc_out);
 
 /**
  * @brief Return true if the S3 session keep-alive timer has expired.
@@ -177,15 +176,15 @@ void uds_core_session_refresh(UdsCoreSession *sess);
  * Fields are public so tests can manipulate timestamps directly.
  */
 typedef struct {
-  uint8_t         seed[UDS_CORE_SEED_LEN]; /**< Most recently generated seed. */
-  bool            seed_valid;    /**< True while seed awaits key verification. */
-  uint8_t         pending_level; /**< Sub-fn (odd) used in requestSeed. */
-  struct timespec seed_ts;       /**< Monotonic time when seed was generated. */
-  uint8_t         fail_count;    /**< Failed key attempts for pending_level. */
-  bool            locked;        /**< True while ECU is in lockout. */
-  struct timespec locked_ts;     /**< Monotonic time when lockout started. */
-  uint8_t         unlocked_level;/**< Odd sub_fn of currently unlocked level
-                                      (0 = no level unlocked). */
+  uint8_t seed[UDS_CORE_SEED_LEN]; /**< Most recently generated seed. */
+  bool seed_valid;           /**< True while seed awaits key verification. */
+  uint8_t pending_level;     /**< Sub-fn (odd) used in requestSeed. */
+  struct timespec seed_ts;   /**< Monotonic time when seed was generated. */
+  uint8_t fail_count;        /**< Failed key attempts for pending_level. */
+  bool locked;               /**< True while ECU is in lockout. */
+  struct timespec locked_ts; /**< Monotonic time when lockout started. */
+  uint8_t unlocked_level;    /**< Odd sub_fn of currently unlocked level
+                                  (0 = no level unlocked). */
 } UdsCoreSecurity;
 
 /**
@@ -212,8 +211,8 @@ void uds_core_security_init(UdsCoreSecurity *sec);
  *         UDS_CORE_ERR_BUF.
  */
 int uds_core_sec_request_seed(UdsCoreSecurity *sec, uint8_t sub_fn,
-                               uint8_t *resp, size_t resp_size,
-                               size_t *resp_len, uint8_t *nrc_out);
+                              uint8_t *resp, size_t resp_size, size_t *resp_len,
+                              uint8_t *nrc_out);
 
 /**
  * @brief Process a Service 0x27 sendKey (even sub-function) request.
@@ -234,9 +233,8 @@ int uds_core_sec_request_seed(UdsCoreSecurity *sec, uint8_t sub_fn,
  *         UDS_CORE_ERR_BUF.
  */
 int uds_core_sec_send_key(UdsCoreSecurity *sec, uint8_t sub_fn,
-                          const uint8_t *key, size_t key_len,
-                          uint8_t *resp, size_t resp_size, size_t *resp_len,
-                          uint8_t *nrc_out);
+                          const uint8_t *key, size_t key_len, uint8_t *resp,
+                          size_t resp_size, size_t *resp_len, uint8_t *nrc_out);
 
 /**
  * @brief Return true if the specified security level is currently unlocked.
@@ -269,7 +267,7 @@ void uds_core_sec_reset(UdsCoreSecurity *sec);
  * @param[out] key_out  Output buffer for computed key (must be ≥ seed_len).
  */
 void uds_core_sec_compute_key(const uint8_t *seed, size_t seed_len,
-                               uint8_t *key_out);
+                              uint8_t *key_out);
 
 /* ── Utility ────────────────────────────────────────────────────────────── */
 
