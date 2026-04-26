@@ -9,6 +9,10 @@ on:
 env:
   BUILD_TYPE: Debug
 
+# Restrict default GITHUB_TOKEN permissions (principle of least privilege)
+permissions:
+  contents: read
+
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
   # Job 1: Code Quality — static analysis & formatting
@@ -151,14 +155,13 @@ jobs:
 
       - name: Run pytest
         run: |
-          # Collect test paths that actually exist
-          TEST_PATHS=""
-          [ -d tests ]  && TEST_PATHS="$TEST_PATHS tests/"
-          [ -d tools ]  && TEST_PATHS="$TEST_PATHS tools/"
+          # Collect test paths that actually exist into an array
+          TEST_PATHS=()
+          [ -d tests ] && TEST_PATHS+=(tests/)
+          [ -d tools ] && TEST_PATHS+=(tools/)
 
-          if [ -n "$TEST_PATHS" ]; then
-            # shellcheck disable=SC2086
-            python -m pytest $TEST_PATHS \
+          if [ "${#TEST_PATHS[@]}" -gt 0 ]; then
+            python -m pytest "${TEST_PATHS[@]}" \
               --cov=tools \
               --cov-report=xml:coverage-python.xml \
               --cov-report=term-missing \

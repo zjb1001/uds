@@ -33,8 +33,7 @@ jobs:
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=dist \
-            -DPROJECT_VERSION=${{ steps.version.outputs.VERSION }}
+            -DCMAKE_INSTALL_PREFIX=dist
 
       - name: Build
         run: cmake --build build --parallel "$(nproc)"
