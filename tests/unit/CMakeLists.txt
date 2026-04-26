@@ -99,3 +99,75 @@ add_test(
     NAME    uds_core_security_unit_tests
     COMMAND test_security
 )
+
+# ── uds_data unit tests ───────────────────────────────────────────────────────
+add_executable(test_data
+    test_data.c
+)
+
+target_include_directories(test_data PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_data PRIVATE
+    uds_core
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_data PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_data_unit_tests
+    COMMAND test_data
+)
+
+# ── uds_dtc unit tests ───────────────────────────────────────────────────────
+add_executable(test_dtc
+    test_dtc.c
+)
+
+target_include_directories(test_dtc PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_dtc PRIVATE
+    uds_core
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_dtc PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_dtc_unit_tests
+    COMMAND test_dtc
+)
+
+# ── uds_bootloader unit tests ─────────────────────────────────────────────────
+add_executable(test_flash
+    test_flash.c
+)
+
+target_include_directories(test_flash PRIVATE
+    ${CHECK_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries(test_flash PRIVATE
+    uds_bootloader
+    ${CHECK_LIBRARIES}
+)
+
+target_compile_options(test_flash PRIVATE
+    ${CHECK_CFLAGS_OTHER}
+)
+
+add_test(
+    NAME    uds_flash_unit_tests
+    COMMAND test_flash
+)

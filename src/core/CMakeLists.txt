@@ -10,6 +10,9 @@ add_library(uds_core STATIC
     nrc.c
     session.c
     security.c
+    data.c
+    dtc.c
+    routine_control.c
 )
 
 target_include_directories(uds_core
