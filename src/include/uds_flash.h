@@ -187,8 +187,11 @@ void uds_xfer_init(UdsXferSession *xfer);
  *
  * @param[in,out] xfer              Transfer session state.
  * @param[in,out] flash             Flash memory device.
- * @param[in]     address_and_len_fmt  Format byte: high nibble = address bytes,
- *                                  low nibble = length bytes (each 1–4).
+ * @param[in]     address_and_len_fmt  Format byte
+ *                                  (addressAndLengthFormatIdentifier):
+ *                                  high nibble = memorySize length,
+ *                                  low nibble = memoryAddress length
+ *                                  (each 1–4 bytes, per ISO 14229-1).
  * @param[in]     addr_and_len_data Packed address+length bytes (big-endian).
  * @param[in]     data_len          Length of @p addr_and_len_data.
  * @param[out]    resp              Buffer for positive response bytes.
@@ -213,7 +216,11 @@ int uds_svc_request_download(UdsXferSession *xfer, UdsFlashMemory *flash,
  *
  * @param[in,out] xfer              Transfer session state.
  * @param[in]     flash             Flash memory device (read-only).
- * @param[in]     address_and_len_fmt  Format byte.
+ * @param[in]     address_and_len_fmt  Format byte
+ *                                  (addressAndLengthFormatIdentifier):
+ *                                  high nibble = memorySize length,
+ *                                  low nibble = memoryAddress length
+ *                                  (each 1–4 bytes, per ISO 14229-1).
  * @param[in]     addr_and_len_data Packed address+length bytes (big-endian).
  * @param[in]     data_len          Length of @p addr_and_len_data.
  * @param[out]    resp              Buffer for positive response bytes.
@@ -267,8 +274,9 @@ int uds_svc_transfer_data(UdsXferSession *xfer, UdsFlashMemory *flash,
  * @return UDS_CORE_OK, UDS_CORE_ERR_PARAM, UDS_CORE_ERR_NRC, or
  *         UDS_CORE_ERR_BUF.
  */
-int uds_svc_transfer_exit(UdsXferSession *xfer, uint8_t *resp, size_t resp_size,
-                          size_t *resp_len, uint8_t *nrc_out);
+int uds_svc_transfer_exit(UdsXferSession *xfer, uint8_t *resp,
+                          size_t resp_size, size_t *resp_len,
+                          uint8_t *nrc_out);
 
 #ifdef __cplusplus
 }

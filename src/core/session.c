@@ -96,8 +96,10 @@ int uds_core_dsc(UdsCoreSession *sess, uint8_t session_type, uint8_t *resp,
   resp[1] = session_type;
   resp[2] = (uint8_t)(sess->cfg.p2_ms >> 8);
   resp[3] = (uint8_t)(sess->cfg.p2_ms & 0xFFU);
-  resp[4] = (uint8_t)(sess->cfg.p2_star_ms >> 8);
-  resp[5] = (uint8_t)(sess->cfg.p2_star_ms & 0xFFU);
+  /* ISO 14229-1: P2* field is in units of 10 ms */
+  uint16_t p2_star_10ms = (uint16_t)(sess->cfg.p2_star_ms / 10U);
+  resp[4] = (uint8_t)(p2_star_10ms >> 8);
+  resp[5] = (uint8_t)(p2_star_10ms & 0xFFU);
   *resp_len = 6U;
 
   return UDS_CORE_OK;

@@ -328,10 +328,10 @@ START_TEST(test_req_download_invalid_address) {
     UdsXferSession xfer;
     uds_xfer_init(&xfer);
 
-    /* fmt=0x42: 4 address bytes, 2 size bytes.
+    /* fmt=0x24: high nibble=2 (memorySize bytes), low nibble=4 (memoryAddress bytes).
      * Address 0x00030000 is beyond both regions (each 0x10000 bytes). */
     uint8_t params[] = {0x00U, 0x03U, 0x00U, 0x00U, 0x01U, 0x00U};
-    int rc = uds_svc_request_download(&xfer, &flash, 0x42U,
+    int rc = uds_svc_request_download(&xfer, &flash, 0x24U,
                                       params, sizeof(params),
                                       resp, sizeof(resp), &resp_len, &nrc);
 
@@ -346,10 +346,10 @@ START_TEST(test_req_download_fmt_parsing_4byte_addr) {
     UdsXferSession xfer;
     uds_xfer_init(&xfer);
 
-    /* fmt = 0x42: 4 address bytes, 2 size bytes
+    /* fmt = 0x24: high nibble=2 (memorySize bytes), low nibble=4 (memoryAddress bytes).
      * addr = 0x00001000, size = 0x0020 */
     uint8_t params[] = {0x00U, 0x00U, 0x10U, 0x00U, 0x00U, 0x20U};
-    int rc = uds_svc_request_download(&xfer, &flash, 0x42U,
+    int rc = uds_svc_request_download(&xfer, &flash, 0x24U,
                                       params, sizeof(params),
                                       resp, sizeof(resp), &resp_len, &nrc);
 
@@ -459,10 +459,10 @@ START_TEST(test_req_upload_invalid_address) {
     UdsXferSession xfer;
     uds_xfer_init(&xfer);
 
-    /* fmt=0x42: 4 address bytes, 2 size bytes.
+    /* fmt=0x24: high nibble=2 (memorySize bytes), low nibble=4 (memoryAddress bytes).
      * Address 0x00030000 is beyond both regions (each 0x10000 bytes). */
     uint8_t params[] = {0x00U, 0x03U, 0x00U, 0x00U, 0x01U, 0x00U};
-    int rc = uds_svc_request_upload(&xfer, &flash, 0x42U,
+    int rc = uds_svc_request_upload(&xfer, &flash, 0x24U,
                                     params, sizeof(params),
                                     resp, sizeof(resp), &resp_len, &nrc);
 

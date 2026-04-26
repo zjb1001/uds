@@ -232,8 +232,11 @@ static void ecusim_dispatch(EcuSimulator *sim, const uint8_t *req,
                 (uint8_t)UDS_NRC_INCORRECT_MSG_LEN_OR_FORMAT);
       return;
     }
-    rc = uds_svc_request_download(&sim->xfer, &sim->flash, req[1], req + 2U,
-                                  req_len - 2U, resp, resp_sz, resp_len, &nrc);
+    /* req[1] = dataFormatIdentifier (ignored in this simulator)
+     * req[2] = addressAndLengthFormatIdentifier
+     * req[3..] = packed memoryAddress + memorySize (big-endian) */
+    rc = uds_svc_request_download(&sim->xfer, &sim->flash, req[2], req + 3U,
+                                  req_len - 3U, resp, resp_sz, resp_len, &nrc);
     break;
 
   /* ── 0x35: RequestUpload ────────────────────────────────────────────── */
@@ -243,8 +246,11 @@ static void ecusim_dispatch(EcuSimulator *sim, const uint8_t *req,
                 (uint8_t)UDS_NRC_INCORRECT_MSG_LEN_OR_FORMAT);
       return;
     }
-    rc = uds_svc_request_upload(&sim->xfer, &sim->flash, req[1], req + 2U,
-                                req_len - 2U, resp, resp_sz, resp_len, &nrc);
+    /* req[1] = dataFormatIdentifier (ignored in this simulator)
+     * req[2] = addressAndLengthFormatIdentifier
+     * req[3..] = packed memoryAddress + memorySize (big-endian) */
+    rc = uds_svc_request_upload(&sim->xfer, &sim->flash, req[2], req + 3U,
+                                req_len - 3U, resp, resp_sz, resp_len, &nrc);
     break;
 
   /* ── 0x36: TransferData ─────────────────────────────────────────────── */

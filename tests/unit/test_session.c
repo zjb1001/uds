@@ -173,9 +173,9 @@ START_TEST(test_dsc_response_contains_p2_values) {
   /* P2 big-endian: 0x00 0x64 */
   ck_assert_uint_eq(resp[2], 0x00U);
   ck_assert_uint_eq(resp[3], 0x64U);
-  /* P2* big-endian: 0x07 0xD0 */
-  ck_assert_uint_eq(resp[4], 0x07U);
-  ck_assert_uint_eq(resp[5], 0xD0U);
+  /* P2* big-endian in 10 ms units: 2000 ms / 10 = 200 = 0x00C8 */
+  ck_assert_uint_eq(resp[4], 0x00U);
+  ck_assert_uint_eq(resp[5], 0xC8U);
 }
 END_TEST
 
