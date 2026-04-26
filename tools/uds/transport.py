@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
+from typing import Protocol, runtime_checkable
 
 from .exceptions import UdsProtocolError, UdsTimeoutError
 
-if TYPE_CHECKING:
-    pass
+
+@runtime_checkable
+class _CanBus(Protocol):
+    """Minimal interface expected from a python-can Bus object."""
+
+    def send(self, msg: object) -> None: ...
+    def recv(self, timeout: float | None = None) -> object | None: ...
+    def shutdown(self) -> None: ...
 
 # ISO-TP frame type nibbles
 _SF = 0x0  # Single Frame
@@ -51,7 +57,7 @@ class IsoTpTransport:
         self._tx_id = tx_id
         self._rx_id = rx_id
         self._timeout = timeout
-        self._bus: object | None = None
+        self._bus: _CanBus | None = None
 
     # ── lifecycle ─────────────────────────────────────────────────────────
 
@@ -79,7 +85,7 @@ class IsoTpTransport:
         """Close the CAN bus interface."""
         if self._bus is not None:
             try:
-                self._bus.shutdown()  # type: ignore[union-attr]
+                self._bus.shutdown()
             except Exception:
                 pass
             self._bus = None
@@ -153,7 +159,7 @@ class IsoTpTransport:
         payload[0] = (_SF << 4) | len(data)
         payload[1 : 1 + len(data)] = data
         msg = can.Message(arbitration_id=self._tx_id, data=payload, is_extended_id=False)
-        self._bus.send(msg)  # type: ignore[union-attr]
+        self._bus.send(msg)
 
     def _send_multi(self, data: bytes) -> None:
         """Send a multi-frame ISO-TP message (FF + CFs)."""
@@ -167,7 +173,7 @@ class IsoTpTransport:
         ff[1] = total & 0xFF
         ff[2:8] = data[0:6]
         msg = can.Message(arbitration_id=self._tx_id, data=ff, is_extended_id=False)
-        self._bus.send(msg)  # type: ignore[union-attr]
+        self._bus.send(msg)
 
         # Wait for Flow Control
         deadline = time.monotonic() + self._timeout
@@ -191,7 +197,7 @@ class IsoTpTransport:
             cf[0] = (_CF << 4) | (sn & 0x0F)
             cf[1 : 1 + len(chunk)] = chunk
             msg = can.Message(arbitration_id=self._tx_id, data=cf, is_extended_id=False)
-            self._bus.send(msg)  # type: ignore[union-attr]
+            self._bus.send(msg)
 
             offset += len(chunk)
             sn = (sn + 1) & 0x0F
@@ -222,7 +228,7 @@ class IsoTpTransport:
         # Send Flow Control — ContinueToSend, no block limit, no ST min
         fc = bytearray([_FC_CONTINUE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
         msg = can.Message(arbitration_id=self._tx_id, data=fc, is_extended_id=False)
-        self._bus.send(msg)  # type: ignore[union-attr]
+        self._bus.send(msg)
 
         expected_sn = 1
         while len(buf) < total:
@@ -247,7 +253,7 @@ class IsoTpTransport:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            msg = self._bus.recv(timeout=min(remaining, 0.1))  # type: ignore[union-attr]
+            msg = self._bus.recv(timeout=min(remaining, 0.1))
             if msg is None:
                 continue
             if msg.arbitration_id == self._rx_id:

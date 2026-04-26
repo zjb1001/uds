@@ -46,8 +46,13 @@ def cli(ctx: click.Context, interface: str, ecu_id: int, address: str) -> None:
 @click.option("--addr-len", default=4, show_default=True, type=int, help="Address field length.")
 @click.option("--size-len", default=2, show_default=True, type=int, help="Size field length.")
 @click.option("--timeout", default=10.0, show_default=True, type=float, help="Timeout (s).")
-@click.option("--unlock-level", default=1, show_default=True, type=int,
-              help="Security level to unlock before flashing.")
+@click.option(
+    "--unlock-level",
+    default=1,
+    show_default=True,
+    type=int,
+    help="Security level to unlock before flashing.",
+)
 @click.pass_context
 def download(
     ctx: click.Context,

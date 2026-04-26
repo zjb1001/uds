@@ -93,9 +93,9 @@ class UdsClient:
                     # ECU is still processing; wait for the real response
                     continue
                 try:
-                    nrc = UdsNrc(nrc_byte)
+                    nrc: UdsNrc | int = UdsNrc(nrc_byte)
                 except ValueError:
-                    nrc = nrc_byte  # type: ignore[assignment]
+                    nrc = nrc_byte
                 raise UdsNrcError(nrc, service_id)
 
             return response

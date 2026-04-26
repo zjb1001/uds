@@ -65,26 +65,23 @@ class UdsDidService:
                 result[resp_did] = bytes(payload[2:])
             return result
 
-        # For multiple DIDs, parse each [did_hi, did_lo, ...data...] group.
-        # The ECU is expected to return them in the same order as requested,
-        # with each DID record directly adjacent.  Without a length field we
-        # rely on parsing pairs matching the requested DID list.
+        # For multiple DIDs, parse sequentially. The ECU returns them in the
+        # requested order; each record is [did_hi, did_lo, data...] where data
+        # continues until the next DID or end of payload.
         idx = 0
-        for did in dids:
+        for i, did in enumerate(dids):
             if idx + 2 > len(payload):
                 break
             resp_did = (payload[idx] << 8) | payload[idx + 1]
             idx += 2
-            # Find where next DID starts (if any remaining)
+            # Determine end of this DID's data by finding the next DID in payload
             next_did_start = len(payload)
-            remaining_dids = dids[dids.index(did) + 1 :]
-            for nd in remaining_dids:
+            if i + 1 < len(dids):
+                next_did = dids[i + 1]
                 for j in range(idx, len(payload) - 1):
-                    if (payload[j] << 8) | payload[j + 1] == nd:
+                    if (payload[j] << 8) | payload[j + 1] == next_did:
                         next_did_start = j
                         break
-                if next_did_start < len(payload):
-                    break
             result[resp_did] = bytes(payload[idx:next_did_start])
             idx = next_did_start
 
