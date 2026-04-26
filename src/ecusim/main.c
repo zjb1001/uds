@@ -48,9 +48,10 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[i], "--interface") == 0 && i + 1 < argc) {
       ifname = argv[++i];
     } else if (strcmp(argv[i], "--ecu-id") == 0 && i + 1 < argc) {
-      long id = strtol(argv[++i], NULL, 0);
-      if (id < 1 || id > 127) {
-        fprintf(stderr, "Error: ecu-id must be 1..127\n");
+      char *endptr = NULL;
+      long id = strtol(argv[++i], &endptr, 0);
+      if (endptr == argv[i] || *endptr != '\0' || id < 1 || id > 127) {
+        fprintf(stderr, "Error: ecu-id must be an integer 1..127\n");
         return 1;
       }
       ecu_id = (uint8_t)id;

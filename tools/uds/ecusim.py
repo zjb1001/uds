@@ -250,8 +250,8 @@ class EcuSimulator:
             if len(raw) < _CAN_FRAME_SIZE:
                 continue
             can_id, dlc, data = struct.unpack(_CAN_FRAME_FMT, raw)
-            # Strip EFF/RTR/ERR flags to get the 11-bit ID
-            actual_id = can_id & 0x1FFFFFFF
+            # Strip EFF/RTR/ERR flags; use 0x7FF mask for standard 11-bit IDs
+            actual_id = can_id & 0x7FF
             if actual_id == self._rx_id:
                 return data[:dlc]
         return None
