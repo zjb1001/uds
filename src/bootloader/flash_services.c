@@ -44,7 +44,8 @@ void uds_xfer_init(UdsXferSession *xfer) {
 static bool parse_addr_len_fmt(uint8_t fmt, const uint8_t *data,
                                size_t data_len, uint32_t *addr_out,
                                uint32_t *len_out) {
-  /* ISO 14229-1: high nibble = memorySize length, low nibble = memoryAddress length */
+  /* ISO 14229-1: high nibble = memorySize length,
+   *              low nibble  = memoryAddress length */
   uint8_t addr_bytes = fmt & 0x0FU;
   uint8_t size_bytes = (fmt >> 4U) & 0x0FU;
 
