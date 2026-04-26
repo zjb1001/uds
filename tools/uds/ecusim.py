@@ -650,7 +650,9 @@ class EcuSimulator:
             self._flash[flash_start : flash_start + len(chunk)] = chunk
             self._xfer_offset += len(chunk)
             # ISO 14229-1: block sequence counter wraps 0xFF → 0x01 (never 0x00)
-            self._xfer_expected_sn = 1 if self._xfer_expected_sn >= 0xFF else self._xfer_expected_sn + 1
+            self._xfer_expected_sn = (
+                1 if self._xfer_expected_sn >= 0xFF else self._xfer_expected_sn + 1
+            )
             return bytes([0x76, block_sn])
 
         # upload: ECU sends data
