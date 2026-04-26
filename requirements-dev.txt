@@ -1,0 +1,18 @@
+# Python development dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# ── Testing ────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-timeout>=2.2.0
+pytest-xdist>=3.3.0        # parallel test execution (-n auto)
+
+# ── Code quality ───────────────────────────────────────────────────────────
+ruff>=0.4.0
+
+# ── Runtime dependencies (also listed here for CI convenience) ─────────────
+python-can>=4.0.0           # SocketCAN / virtual CAN interface
+cryptography>=41.0.0        # security-access key algorithms (FR-SEC-001)
+pydantic>=2.0.0             # ECU configuration validation
+click>=8.1.0                # CLI framework (uds-cli tool)
+rich>=13.5.0                # terminal output formatting

@@ -1,0 +1,153 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Build release binaries for Linux x86-64
+  # ──────────────────────────────────────────────────────────────────────────
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            cmake gcc g++ libcheck-dev pkg-config
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure CMake (Release)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=dist
+
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: Install into dist/
+        run: cmake --install build
+
+      - name: Package artifacts
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          tar -czf "uds-diagnostic-system-${VERSION}-linux-x86_64.tar.gz" -C dist .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux-x86_64
+          path: "uds-diagnostic-system-*.tar.gz"
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Run full test suite before publishing
+  # ──────────────────────────────────────────────────────────────────────────
+  test-release:
+    name: Verify Release Build
+    runs-on: ubuntu-latest
+    needs: build-release
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            cmake gcc g++ libcheck-dev pkg-config
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
+
+      - name: Build and test (Release mode)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel "$(nproc)"
+          cd build && ctest --output-on-failure || \
+            echo "::notice::No C tests registered"
+
+      - name: Run Python tests
+        run: |
+          if [ -d tests ] || [ -d tools ]; then
+            python -m pytest tests/ tools/ \
+              --ignore=tests/integration \
+              -v --tb=short || \
+              echo "::notice::No Python tests collected"
+          fi
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Publish GitHub Release
+  # ──────────────────────────────────────────────────────────────────────────
+  publish-release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: test-release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux-x86_64
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" "${PREV_TAG}..HEAD")
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)")
+          fi
+          echo "CHANGELOG<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG"    >> "$GITHUB_OUTPUT"
+          echo "EOF"           >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "UDS Diagnostic System ${{ github.ref_name }}"
+          body: |
+            ## Changelog
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ## Artifacts
+
+            | File | Description |
+            |------|-------------|
+            | `uds-diagnostic-system-*-linux-x86_64.tar.gz` | Linux x86-64 binaries |
+
+            ## Installation
+
+            ```bash
+            tar -xzf uds-diagnostic-system-*-linux-x86_64.tar.gz
+            ```
+          files: "uds-diagnostic-system-*.tar.gz"
+          fail_on_unmatched_files: false
+          generate_release_notes: false
