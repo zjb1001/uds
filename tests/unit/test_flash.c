@@ -459,8 +459,10 @@ START_TEST(test_req_upload_invalid_address) {
     UdsXferSession xfer;
     uds_xfer_init(&xfer);
 
+    /* fmt=0x42: 4 address bytes, 2 size bytes.
+     * Address 0x00030000 is beyond both regions (each 0x10000 bytes). */
     uint8_t params[] = {0x00U, 0x03U, 0x00U, 0x00U, 0x01U, 0x00U};
-    int rc = uds_svc_request_upload(&xfer, &flash, 0x32U,
+    int rc = uds_svc_request_upload(&xfer, &flash, 0x42U,
                                     params, sizeof(params),
                                     resp, sizeof(resp), &resp_len, &nrc);
 
