@@ -340,6 +340,10 @@ const char *uds_tp_strerror(int err);
 
 #include <linux/can.h>
 
+/** Minimum SF_DL value when using the CAN FD escape sequence (ISO 15765-2:
+ *  escape sequence is only used when SF_DL > UDS_TP_SF_MAX_DATA). */
+#define UDS_TP_CANFD_SF_ESCAPE_MIN_DL (UDS_TP_SF_MAX_DATA + 1U)  /* 8 */
+
 /** Maximum payload bytes in a CAN FD Single Frame using the escape sequence
  *  (PCI byte 0x00 + SF_DL byte): 64 - 2 = 62. */
 #define UDS_TP_CANFD_SF_MAX_DATA 62U

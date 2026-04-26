@@ -535,7 +535,7 @@ int uds_tp_encode_sf_fd(struct canfd_frame *out, uint32_t can_id,
     out->data[0] = (uint8_t)len;
     memcpy(&out->data[1], data, len);
   } else {
-    /* CAN FD escape sequence: data[0] = 0x00, data[1] = SF_DL */
+    /* CAN FD escape sequence: data[0] = 0x00, data[1] = SF_DL (≥ 8) */
     out->len = (uint8_t)(2U + len);
     out->data[0] = 0x00U;
     out->data[1] = (uint8_t)len;
@@ -643,7 +643,7 @@ int uds_tp_decode_sf_fd(const struct canfd_frame *frame, uint8_t *buf,
     }
     len = (size_t)frame->data[1];
     data_offset = 2U;
-    if (len < 8U || len > UDS_TP_CANFD_SF_MAX_DATA) {
+    if (len < UDS_TP_CANFD_SF_ESCAPE_MIN_DL || len > UDS_TP_CANFD_SF_MAX_DATA) {
       return UDS_TP_ERR_PARAM;
     }
   } else {

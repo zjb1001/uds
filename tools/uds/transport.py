@@ -36,6 +36,7 @@ _MAX_CAN_PAYLOAD = 8
 # CAN FD limits (ISO 15765-2)
 _CANFD_MAX_DLEN = 64
 _CANFD_SF_MAX_PAYLOAD = 62   # 64 - 1 PCI - 1 SF_DL escape byte
+_CANFD_SF_ESCAPE_MIN_LEN = 2  # minimum frame length for escape-sequence SF (PCI + SF_DL)
 _CANFD_FF_DATA_BYTES = 62    # 64 - 2 PCI bytes (regular FF)
 _CANFD_FF_EXT_DATA_BYTES = 58  # 64 - 6 PCI bytes (extended FF, FF_DL > 4095)
 _CANFD_CF_DATA_BYTES = 63    # 64 - 1 PCI byte
@@ -199,7 +200,7 @@ class IsoTpTransport:
         """Decode a Single Frame, handling CAN FD escape-sequence PCI."""
         if self._fd and (frame[0] & 0x0F) == 0:
             # CAN FD escape sequence: data[0] == 0x00, data[1] == SF_DL
-            if len(frame) < 2:  # noqa: PLR2004
+            if len(frame) < _CANFD_SF_ESCAPE_MIN_LEN:
                 raise UdsProtocolError("CAN FD SF escape sequence too short")
             length = frame[1]
             return bytes(frame[2 : 2 + length])
