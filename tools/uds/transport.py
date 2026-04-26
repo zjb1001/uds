@@ -60,6 +60,7 @@ class IsoTpTransport:
         self._rx_id = rx_id
         self._timeout = timeout
         self._bus: _CanBus | None = None
+        self._msg_cls: type | None = None  # cached can.Message class
 
     # ── lifecycle ─────────────────────────────────────────────────────────
 
@@ -82,6 +83,7 @@ class IsoTpTransport:
             self._bus = can.Bus(channel=self._channel, interface="socketcan")
         except Exception as exc:
             raise OSError(f"Cannot open CAN interface '{self._channel}': {exc}") from exc
+        self._msg_cls = can.Message
 
     def close(self) -> None:
         """Close the CAN bus interface."""
@@ -151,20 +153,30 @@ class IsoTpTransport:
 
     # ── private helpers ───────────────────────────────────────────────────
 
+    def _make_message(self, data: bytearray) -> object:
+        """Create a python-can Message for transmission."""
+        return self._msg_cls(arbitration_id=self._tx_id, data=data, is_extended_id=False)
+
+    def _check_fc_continue(self, fc: bytes | None, context: str) -> tuple[int, int]:
+        """Validate a Flow Control frame and return (block_size, st_min_ms).
+
+        Raises UdsTimeoutError if *fc* is None, UdsProtocolError if not CTS.
+        """
+        if fc is None:
+            raise UdsTimeoutError(f"Timeout waiting for Flow Control ({context})")
+        if fc[0] != _FC_CONTINUE:
+            raise UdsProtocolError(f"Expected FC ContinueToSend, got 0x{fc[0]:02X}")
+        return fc[1], fc[2]
+
     def _send_sf(self, data: bytes) -> None:
         """Send a Single Frame."""
-        import can  # noqa: PLC0415
-
         payload = bytearray(8)
         payload[0] = (_SF << 4) | len(data)
         payload[1 : 1 + len(data)] = data
-        msg = can.Message(arbitration_id=self._tx_id, data=payload, is_extended_id=False)
-        self._bus.send(msg)
+        self._bus.send(self._make_message(payload))
 
     def _send_multi(self, data: bytes) -> None:
         """Send a multi-frame ISO-TP message (FF + CFs)."""
-        import can  # noqa: PLC0415
-
         total = len(data)
 
         # First Frame
@@ -172,19 +184,12 @@ class IsoTpTransport:
         ff[0] = (_FF << 4) | ((total >> 8) & 0x0F)
         ff[1] = total & 0xFF
         ff[2:8] = data[0:6]
-        msg = can.Message(arbitration_id=self._tx_id, data=ff, is_extended_id=False)
-        self._bus.send(msg)
+        self._bus.send(self._make_message(ff))
 
         # Wait for Flow Control
         deadline = time.monotonic() + self._timeout
         fc = self._recv_frame(deadline)
-        if fc is None:
-            raise UdsTimeoutError("Timeout waiting for Flow Control")
-        if fc[0] != _FC_CONTINUE:
-            raise UdsProtocolError(f"Expected FC ContinueToSend, got 0x{fc[0]:02X}")
-
-        block_size = fc[1]
-        st_min_ms = fc[2]
+        block_size, st_min_ms = self._check_fc_continue(fc, "initial")
 
         # Consecutive Frames
         sn = 1
@@ -196,8 +201,7 @@ class IsoTpTransport:
             cf = bytearray(8)
             cf[0] = (_CF << 4) | (sn & 0x0F)
             cf[1 : 1 + len(chunk)] = chunk
-            msg = can.Message(arbitration_id=self._tx_id, data=cf, is_extended_id=False)
-            self._bus.send(msg)
+            self._bus.send(self._make_message(cf))
 
             offset += len(chunk)
             sn = (sn + 1) & 0x0F
@@ -210,25 +214,17 @@ class IsoTpTransport:
                 # Wait for next FC
                 deadline = time.monotonic() + self._timeout
                 fc = self._recv_frame(deadline)
-                if fc is None:
-                    raise UdsTimeoutError("Timeout waiting for Flow Control (block)")
-                if fc[0] != _FC_CONTINUE:
-                    raise UdsProtocolError(f"Expected FC ContinueToSend, got 0x{fc[0]:02X}")
-                block_size = fc[1]
-                st_min_ms = fc[2]
+                block_size, st_min_ms = self._check_fc_continue(fc, "block")
                 block_count = 0
 
     def _recv_multi(self, first_frame: bytes, deadline: float) -> bytes:
         """Reassemble a multi-frame message after receiving the First Frame."""
-        import can  # noqa: PLC0415
-
         total = ((first_frame[0] & 0x0F) << 8) | first_frame[1]
         buf = bytearray(first_frame[2:8])
 
         # Send Flow Control — ContinueToSend, no block limit, no ST min
-        fc = bytearray([_FC_CONTINUE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        msg = can.Message(arbitration_id=self._tx_id, data=fc, is_extended_id=False)
-        self._bus.send(msg)
+        fc_frame = bytearray([_FC_CONTINUE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        self._bus.send(self._make_message(fc_frame))
 
         expected_sn = 1
         while len(buf) < total:

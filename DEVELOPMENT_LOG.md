@@ -122,11 +122,85 @@ src/
   include/        ← public headers (uds_can.h, uds_tp.h, uds_core.h, …)
   can/            ← SocketCAN adapter (DONE)
   tp/             ← ISO-TP transport (DONE)
-  core/           ← UDS diagnostic services (TODO Phase 2)
-  bootloader/     ← Bootloader & flash sim (TODO Phase 3)
-  ecusim/         ← ECU simulator (TODO Phase 3)
-tools/            ← Python tools (TODO Phase 4)
+  core/           ← UDS diagnostic services (DONE Phase 2)
+  bootloader/     ← Bootloader & flash sim (DONE Phase 3)
+tools/            ← Python tools (DONE Phase 4)
+  uds/            ← Python UDS library package
+  diag_cli.py     ← CLI diagnostic client
+  flash_tool.py   ← CLI flash tool
 tests/
   unit/           ← C unit tests (check framework)
   integration/    ← Python integration tests (vCAN)
+  test_uds_*.py   ← Python unit tests (no hardware)
 ```
+
+---
+
+## Session 2 — 2026-04-26
+
+### Work Completed
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Phase 2: `src/core/` UDS core services | ✅ Done | session.c, security.c, data.c, dtc.c, routine_control.c, nrc.c |
+| Phase 2: `src/include/uds_core.h` | ✅ Done | Unified header, error codes, session types |
+| Phase 2: `src/include/uds_nrc.h` | ✅ Done | All ISO 14229-1 NRC codes |
+| Phase 2: `src/include/uds_data.h` | ✅ Done | DID registry, services 0x22/0x2E/0x11/0x28 |
+| Phase 2: `src/include/uds_dtc.h` | ✅ Done | DTC registry, services 0x14/0x19 |
+| Phase 2: `src/include/uds_routine.h` | ✅ Done | Routine registry, service 0x31 |
+| Phase 2: unit tests | ✅ Done | test_session.c, test_security.c, test_data.c, test_dtc.c |
+| Phase 3: `src/bootloader/flash.c` | ✅ Done | Flash simulation (init, erase, write, read, addr validation) |
+| Phase 3: `src/bootloader/flash_services.c` | ✅ Done | Services 0x34/0x35/0x36/0x37 |
+| Phase 3: `src/include/uds_flash.h` | ✅ Done | Flash memory model and transfer session API |
+| Phase 3: unit tests | ✅ Done | test_flash.c (all 7 suites pass) |
+| **Bug fix**: `test_req_upload_invalid_address` | ✅ Fixed | Format byte was 0x32 (3 addr bytes → valid addr) → corrected to 0x42 (4 addr bytes → addr 0x00030000 out of range) |
+| Phase 4: `tools/uds/` Python library | ✅ Done | nrc.py, exceptions.py, transport.py, client.py, session.py, security.py, data.py, dtc.py, flash.py |
+| Phase 4: `tools/diag_cli.py` | ✅ Done | Click CLI: session, tester-present, read-did, write-did, read-dtc, clear-dtc, reset, unlock |
+| Phase 4: `tools/flash_tool.py` | ✅ Done | Click CLI: download, upload with rich progress bars |
+| Phase 4: Python unit tests | ✅ Done | 94 tests: test_uds_nrc.py, test_uds_security.py, test_uds_session.py, test_uds_data.py |
+| Phase 4: integration tests | ✅ Done | tests/integration/ (vCAN, skips gracefully if vcan0 unavailable) |
+
+### Phase Milestone Progress
+
+- **Phase 1 (M1):** ✅ Complete
+- **Phase 2 (M2):** ✅ Complete — all core services (0x10/0x3E/0x27/0x22/0x2E/0x19/0x14/0x11/0x28/0x31)
+- **Phase 3 (M3):** ✅ Complete — flash simulation + services 0x34/0x35/0x36/0x37
+- **Phase 4 tools:** ✅ Complete — Python UDS library + CLI tools + 94 unit tests
+
+### C Test Suite Status
+
+All 7 C test suites pass (0 failures):
+
+| Test Suite | Tests | Status |
+|-----------|-------|--------|
+| uds_can_unit_tests | 39 | ✅ |
+| uds_tp_unit_tests | 55 | ✅ |
+| uds_core_session_unit_tests | 30 | ✅ |
+| uds_core_security_unit_tests | ~30 | ✅ |
+| uds_data_unit_tests | ~25 | ✅ |
+| uds_dtc_unit_tests | ~25 | ✅ |
+| uds_flash_unit_tests | ~30 | ✅ |
+
+### Python UDS Library Summary (`tools/uds/`)
+
+**Core modules:**
+- `nrc.py` — `UdsNrc` IntEnum (all ISO 14229-1 NRCs), `from_byte()`, `description` property
+- `exceptions.py` — `UdsError`, `UdsNrcError`, `UdsTimeoutError`, `UdsProtocolError`
+- `transport.py` — `IsoTpTransport` (SF/FF/CF/FC framing over python-can)
+- `client.py` — `UdsClient` (CAN IDs: 0x600+ecu_id / 0x680+ecu_id, 0x78 retry logic)
+
+**Service modules:**
+- `session.py` — Service 0x10 (DSC) + 0x3E (Tester Present)
+- `security.py` — Service 0x27 (XOR key: seed[i] XOR mask[i%4], mask={0xAB,0xCD,0x12,0x34})
+- `data.py` — Services 0x22/0x2E (Read/Write DID), 0x11 (ECU Reset), 0x28 (Comm Control)
+- `dtc.py` — Services 0x14 (Clear DTC), 0x19 sub-functions 0x01/0x02/0x0A
+- `flash.py` — Services 0x34/0x35/0x36/0x37 (download/upload with block sequencing)
+
+### Remaining Work (Phase 5 → v1.0.0)
+
+- Documentation review (design docs already present in `design/`)
+- Performance benchmarking (flash throughput ≥ 10 KB/s)
+- Multi-ECU concurrency / integration tests (requires running ECU simulator)
+- `ecusim/` ECU simulator (to exercise full stack end-to-end)
+- Release preparation (v1.0.0 release notes, packaging)
+

@@ -5,6 +5,10 @@ from __future__ import annotations
 from .client import UdsClient
 
 _SID_SA = 0x27
+# XOR mask used by the simplified security access algorithm.
+# NOTE: This is a demonstration-grade algorithm. Production deployments
+# should use a cryptographically secure key derivation function (e.g.
+# HMAC-SHA256) as described in the project's security design document.
 _XOR_MASK = bytes([0xAB, 0xCD, 0x12, 0x34])
 
 

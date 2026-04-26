@@ -18,8 +18,10 @@ def _vcan0_available() -> bool:
     """Return True if the vcan0 interface is up and accessible."""
     try:
         sock = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-        sock.bind(("vcan0",))
-        sock.close()
+        try:
+            sock.bind(("vcan0",))
+        finally:
+            sock.close()
         return True
     except (OSError, AttributeError):
         return False
